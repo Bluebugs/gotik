@@ -3,7 +3,7 @@ module github.com/bluebugs/fytastik
 go 1.20
 
 require (
-	fyne.io/fyne/v2 v2.3.2-rc2
+	fyne.io/fyne/v2 v2.3.2
 	github.com/go-routeros/routeros v0.0.0-20210123142807-2a44d57c6730
 	go.etcd.io/bbolt v1.3.7
 	golang.org/x/crypto v0.7.0
