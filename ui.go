@@ -59,7 +59,7 @@ func (a *appData) createUI() {
 		footer.SetText("")
 	})
 
-	a.win.SetContent(NewSplit(container.NewBorder(container.NewBorder(nil, nil,
+	a.win.SetContent(NewSplit("Gotik", container.NewBorder(container.NewBorder(nil, nil,
 		widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() { a.removeHost(sel) }),
 		widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() { a.newHost(sel) }),
 		sel),

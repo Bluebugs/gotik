@@ -11,6 +11,7 @@ type AdaptativeSplit struct {
 	widget.BaseWidget
 
 	menu       *widget.Button
+	title      *widget.Label
 	separator  fyne.CanvasObject
 	background fyne.CanvasObject
 
@@ -22,7 +23,7 @@ type AdaptativeSplit struct {
 
 var _ fyne.Widget = (*AdaptativeSplit)(nil)
 
-func NewSplit(leftContent fyne.CanvasObject, rightContent fyne.CanvasObject) *AdaptativeSplit {
+func NewSplit(title string, leftContent fyne.CanvasObject, rightContent fyne.CanvasObject) *AdaptativeSplit {
 	var l *AdaptativeSplit
 	var menu *widget.Button
 	menu = widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
@@ -38,6 +39,7 @@ func NewSplit(leftContent fyne.CanvasObject, rightContent fyne.CanvasObject) *Ad
 	})
 	l = &AdaptativeSplit{
 		menu:         menu,
+		title:        widget.NewLabel(title),
 		separator:    widget.NewSeparator(),
 		background:   canvas.NewRectangle(theme.BackgroundColor()),
 		leftContent:  leftContent,
@@ -76,6 +78,8 @@ func (r *AdaptativeSplitRenderer) Layout(size fyne.Size) {
 	s.menu.Resize(s.menu.MinSize())
 
 	if s.collapsed {
+		s.title.Hide()
+
 		s.separator.Move(fyne.NewPos(s.menu.Position().X+s.menu.Size().Width+theme.Padding(), 0))
 		s.separator.Resize(fyne.NewSize(1, size.Height))
 
@@ -84,6 +88,10 @@ func (r *AdaptativeSplitRenderer) Layout(size fyne.Size) {
 		s.rightContent.Move(fyne.NewPos(s.separator.Position().X+s.separator.Size().Width+theme.Padding(), 0))
 		s.rightContent.Resize(fyne.NewSize(size.Width-s.rightContent.Position().X, size.Height))
 	} else {
+		s.title.Move(fyne.NewPos(s.menu.Position().X+s.menu.Size().Width+theme.Padding(), 0))
+		s.title.Resize(fyne.NewSize(s.leftContent.MinSize().Width-s.title.Position().X, s.menu.Size().Height))
+		s.title.Show()
+
 		s.separator.Move(fyne.NewPos(s.leftContent.Position().X+s.leftContent.Size().Width+theme.Padding(), 0))
 		s.separator.Resize(fyne.NewSize(1, size.Height))
 
@@ -114,6 +122,7 @@ func (r *AdaptativeSplitRenderer) Objects() []fyne.CanvasObject {
 		r.split.rightContent,
 		r.split.background,
 		r.split.menu,
+		r.split.title,
 		r.split.leftContent,
 		r.split.separator,
 	}
