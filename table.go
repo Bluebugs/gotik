@@ -5,14 +5,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type MikrotikTable struct {
-	*widget.Table
-
-	data *MikrotikDataTable
-}
-
-func NewTableWithDataColumn(column []RouterOSHeader, data *MikrotikDataTable) *MikrotikTable {
-	m := &MikrotikTable{Table: widget.NewTable(func() (int, int) {
+func NewTableWithDataColumn(column []RouterOSHeader, data *MikrotikDataTable) *widget.Table {
+	return widget.NewTable(func() (int, int) {
 		return data.Length() + 1, len(column)
 	}, func() fyne.CanvasObject {
 		return widget.NewLabel("Not connected yet place holder")
@@ -35,9 +29,5 @@ func NewTableWithDataColumn(column []RouterOSHeader, data *MikrotikDataTable) *M
 			return
 		}
 		o.(*widget.Label).Bind(col)
-	}),
-		data: data,
-	}
-
-	return m
+	})
 }
