@@ -3,12 +3,13 @@ package main
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
 type AdaptativeSplit struct {
+	widget.BaseWidget
+
 	menu       *widget.Button
 	separator  fyne.CanvasObject
 	background fyne.CanvasObject
@@ -19,10 +20,9 @@ type AdaptativeSplit struct {
 	collapsed bool
 }
 
-var _ fyne.Layout = (*AdaptativeSplit)(nil)
+var _ fyne.Widget = (*AdaptativeSplit)(nil)
 
-func NewSplit(leftContent fyne.CanvasObject, rightContent fyne.CanvasObject) *fyne.Container {
-	var c *fyne.Container
+func NewSplit(leftContent fyne.CanvasObject, rightContent fyne.CanvasObject) *AdaptativeSplit {
 	var l *AdaptativeSplit
 	var menu *widget.Button
 	menu = widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
@@ -34,7 +34,7 @@ func NewSplit(leftContent fyne.CanvasObject, rightContent fyne.CanvasObject) *fy
 			menu.Icon = theme.MenuIcon()
 		}
 		menu.Refresh()
-		c.Layout.Layout(c.Objects, c.Size())
+		l.Refresh()
 	})
 	l = &AdaptativeSplit{
 		menu:         menu,
@@ -43,11 +43,35 @@ func NewSplit(leftContent fyne.CanvasObject, rightContent fyne.CanvasObject) *fy
 		leftContent:  leftContent,
 		rightContent: rightContent,
 	}
-	c = container.New(l, rightContent, l.background, menu, leftContent, l.separator)
-	return c
+	l.BaseWidget.ExtendBaseWidget(l)
+	return l
 }
 
-func (s *AdaptativeSplit) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+func (s *AdaptativeSplit) CreateRenderer() fyne.WidgetRenderer {
+	return &AdaptativeSplitRenderer{
+		split: s,
+	}
+}
+
+func (s *AdaptativeSplit) MinSize() fyne.Size {
+	menuMinSize := s.menu.MinSize()
+	leftMinSize := s.leftContent.MinSize()
+	rightMinSize := s.rightContent.MinSize()
+	separatorMinSize := s.separator.MinSize()
+
+	width := fyne.Max(menuMinSize.Width+rightMinSize.Width+separatorMinSize.Width+theme.Padding()*2, leftMinSize.Width+separatorMinSize.Width+theme.Padding())
+	height := fyne.Max(menuMinSize.Height+leftMinSize.Height, rightMinSize.Height)
+
+	return fyne.NewSize(width, height)
+}
+
+type AdaptativeSplitRenderer struct {
+	split *AdaptativeSplit
+}
+
+func (r *AdaptativeSplitRenderer) Layout(size fyne.Size) {
+	s := r.split
+
 	s.menu.Move(fyne.NewPos(0, 0))
 	s.menu.Resize(s.menu.MinSize())
 
@@ -81,14 +105,23 @@ func (s *AdaptativeSplit) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	s.background.Resize(fyne.NewSize(s.separator.Position().X, size.Height))
 }
 
-func (s *AdaptativeSplit) MinSize(objects []fyne.CanvasObject) fyne.Size {
-	menuMinSize := s.menu.MinSize()
-	leftMinSize := s.leftContent.MinSize()
-	rightMinSize := s.rightContent.MinSize()
-	separatorMinSize := s.separator.MinSize()
+func (r *AdaptativeSplitRenderer) MinSize() fyne.Size {
+	return r.split.MinSize()
+}
 
-	width := fyne.Max(menuMinSize.Width+rightMinSize.Width+separatorMinSize.Width+theme.Padding()*2, leftMinSize.Width+separatorMinSize.Width+theme.Padding())
-	height := fyne.Max(menuMinSize.Height+leftMinSize.Height, rightMinSize.Height)
+func (r *AdaptativeSplitRenderer) Objects() []fyne.CanvasObject {
+	return []fyne.CanvasObject{
+		r.split.rightContent,
+		r.split.background,
+		r.split.menu,
+		r.split.leftContent,
+		r.split.separator,
+	}
+}
 
-	return fyne.NewSize(width, height)
+func (r *AdaptativeSplitRenderer) Refresh() {
+	r.Layout(r.split.Size())
+}
+
+func (r *AdaptativeSplitRenderer) Destroy() {
 }
