@@ -6,19 +6,14 @@ import (
 )
 
 func NewTableWithDataColumn(column []RouterOSHeader, data *MikrotikDataTable) *widget.Table {
-	return widget.NewTable(func() (int, int) {
-		return data.Length() + 1, len(column)
+	t := widget.NewTable(func() (int, int) {
+		return data.Length(), len(column)
 	}, func() fyne.CanvasObject {
 		return widget.NewLabel("Not connected yet place holder")
 	}, func(i widget.TableCellID, o fyne.CanvasObject) {
 		o.(*widget.Label).Unbind()
 
-		if i.Row == 0 {
-			o.(*widget.Label).SetText(column[i.Col].title)
-			return
-		}
-
-		row, err := data.GetItem(i.Row - 1)
+		row, err := data.GetItem(i.Row)
 		if err != nil {
 			o.(*widget.Label).SetText("")
 			return
@@ -30,4 +25,11 @@ func NewTableWithDataColumn(column []RouterOSHeader, data *MikrotikDataTable) *w
 		}
 		o.(*widget.Label).Bind(col)
 	})
+
+	t.ShowHeaderRow = true
+	t.UpdateHeader = func(id widget.TableCellID, template fyne.CanvasObject) {
+		template.(*widget.Label).SetText(column[id.Col].title)
+	}
+
+	return t
 }
