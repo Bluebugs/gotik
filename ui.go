@@ -205,9 +205,11 @@ func (a *appData) removeHost(sel *widget.Select) {
 	}
 	delete(a.routers, sel.Selected)
 
+	a.deleteRouter(r)
+
 	sel.ClearSelected()
 	for i, v := range sel.Options {
-		if v == sel.Selected {
+		if v == r.host {
 			sel.Options = append(sel.Options[:i], sel.Options[i+1:]...)
 			if len(sel.Options) > 0 {
 				sel.SetSelectedIndex(i)
