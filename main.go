@@ -14,6 +14,8 @@ import (
 type router struct {
 	leaseBinding *MikrotikDataTable
 
+	err error
+
 	host     string
 	user     string
 	password string

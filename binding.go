@@ -86,6 +86,10 @@ func NewMikrotikData(host, user, password, path string) (*MikrotikDataTable, err
 							if p.Key == ".id" {
 								continue
 							}
+							_, ok := item.properties[p.Key]
+							if !ok {
+								item.properties[p.Key] = binding.NewString()
+							}
 							item.properties[p.Key].Set(p.Value)
 						}
 					}

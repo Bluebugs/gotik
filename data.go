@@ -55,6 +55,17 @@ func (a *appData) saveRouter(r *router, password string) error {
 	})
 }
 
+func (a *appData) deleteRouter(r *router) error {
+	return a.db.Update(func(tx *bbolt.Tx) error {
+		routers := tx.Bucket([]byte("routers"))
+		if routers == nil {
+			return nil
+		}
+
+		return routers.DeleteBucket([]byte(r.host))
+	})
+}
+
 func (a *appData) saveCurrentView() error {
 	return a.db.Update(func(tx *bbolt.Tx) error {
 		settings, err := tx.CreateBucketIfNotExists([]byte("settings"))
@@ -121,10 +132,9 @@ func (a *appData) loadRouters(sel *widget.Select) error {
 				return fmt.Errorf("invalid password, network.boltdb is corrupted")
 			}
 
-			r, err := routerView(host, string(user), string(password))
-			if err != nil {
-				dialog.ShowError(err, a.win)
-				return nil
+			r := routerView(host, string(user), string(password))
+			if r.err != nil {
+				dialog.ShowError(r.err, a.win)
 			}
 
 			a.routers[host] = r

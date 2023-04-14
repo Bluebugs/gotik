@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
@@ -30,6 +31,22 @@ func (a *appData) createUI() {
 	header.Alignment = fyne.TextAlignCenter
 	footer := widget.NewLabel("")
 	footer.Alignment = fyne.TextAlignCenter
+
+	updateStatus := func(identity binding.String, err error) {
+		if err != nil {
+			tabs.Items = []*container.TabItem{}
+			tabs.Refresh()
+
+			footer.SetText(fmt.Sprintf("%v", err))
+			header.Unbind()
+			header.SetText("Not Connected")
+			return
+		}
+
+		header.Bind(identity)
+		footer.SetText("")
+	}
+
 	sel := widget.NewSelect([]string{}, func(s string) {
 		for _, b := range a.bindings {
 			b.Close()
@@ -38,14 +55,18 @@ func (a *appData) createUI() {
 
 		r, ok := a.routers[s]
 		if !ok {
-			header.Unbind()
-			header.SetText("Not Connected")
+			updateStatus(nil, errors.New("router not found"))
+			return
+		}
+
+		if r.err != nil {
+			updateStatus(nil, r.err)
 			return
 		}
 
 		identity, err := a.routerIdentity(r)
 		if err != nil {
-			footer.SetText(fmt.Sprintf("%v", err))
+			updateStatus(nil, err)
 			return
 		}
 
@@ -55,13 +76,13 @@ func (a *appData) createUI() {
 			a.buildView(tabs, a.currentView)
 		}
 
-		header.Bind(identity)
-		footer.SetText("")
+		updateStatus(identity, nil)
 	})
 
 	a.win.SetContent(NewSplit("Gotik", container.NewBorder(container.NewBorder(nil, nil,
 		widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() { a.removeHost(sel) }),
-		widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() { a.newHost(sel) }),
+		container.NewHBox(widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() { a.newHost(sel) }),
+			widget.NewButtonWithIcon("", theme.MediaReplayIcon(), func() { a.reconnectHost(updateStatus, sel) })),
 		sel),
 		nil, nil, nil, tree),
 		container.NewBorder(header, footer, nil, nil, tabs)))
@@ -84,9 +105,9 @@ func (a *appData) newHost(sel *widget.Select) {
 			{Text: "Password", Widget: pass},
 		}, func(confirm bool) {
 			if confirm {
-				r, err := routerView(host.Text, user.Text, pass.Text)
-				if err != nil {
-					dialog.ShowError(err, a.win)
+				r := routerView(host.Text, user.Text, pass.Text)
+				if r.err != nil {
+					dialog.ShowError(r.err, a.win)
 					return
 				}
 				a.routers[r.host] = r
@@ -220,16 +241,39 @@ func (a *appData) removeHost(sel *widget.Select) {
 	sel.Refresh()
 }
 
-func routerView(host, user, pass string) (*router, error) {
+func (a *appData) reconnectHost(updateStatus func(identity binding.String, err error), sel *widget.Select) {
+	if sel.Selected == "" {
+		return
+	}
+
+	r, ok := a.routers[sel.Selected]
+	if !ok {
+		updateStatus(nil, fmt.Errorf("no router found for %s", sel.Selected))
+		return
+	}
+
+	if r.leaseBinding != nil {
+		r.leaseBinding.Close()
+		r.leaseBinding = nil
+	}
+	r.leaseBinding, r.err = NewMikrotikData(r.host, r.user, r.password, "/ip/dhcp-server/lease")
+	if r.err != nil {
+		updateStatus(nil, r.err)
+	} else {
+		sel.SetSelected(sel.Selected)
+	}
+}
+
+func routerView(host, user, pass string) *router {
 	var err error
 	r := &router{host: host, user: user, password: pass}
 
 	r.leaseBinding, err = NewMikrotikData(host, user, pass, "/ip/dhcp-server/lease")
 	if err != nil {
-		return nil, err
+		r.err = err
 	}
 
-	return r, nil
+	return r
 }
 
 func (a *appData) routerIdentity(r *router) (sprintf binding.String, err error) {
