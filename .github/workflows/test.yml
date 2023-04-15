@@ -1,0 +1,35 @@
+
+name: Platform Tests
+on: [push, pull_request]
+permissions:
+  contents: read
+
+jobs:
+  platform_tests:
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.pull_request.draft }}
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        persist-credentials: false
+
+    - uses: WillAbides/setup-go-faster@v1.8.0
+      with:
+        go-version: '1.19'
+
+    - name: Get dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install gcc libgl1-mesa-dev libegl1-mesa-dev libgles2-mesa-dev libx11-dev xorg-dev
+
+    - name: Update coverage
+      run: |
+        set -e
+        go test -covermode=atomic -coverprofile=coverage.out ./...
+        coverage=`go tool cover -func coverage.out | grep total | tr -s '\t' | cut -f 3 | grep -o '[^%]*'`
+        if (( $(echo "$coverage < 63" | bc) )); then echo "Test coverage lowered"; exit 1; fi
+
+    - name: Update PR Coverage
+      uses: shogo82148/actions-goveralls@v1
+      with:
+        path-to-profile: coverage.out
