@@ -73,6 +73,12 @@ func (a *appData) saveCurrentView() error {
 			return err
 		}
 
+		if a.useTailScale {
+			settings.Put([]byte("useTailScale"), []byte("true"))
+		} else {
+			settings.Put([]byte("useTailScale"), []byte("false"))
+		}
+
 		return settings.Put([]byte("currentView"), []byte(a.currentView))
 	})
 }
@@ -82,6 +88,11 @@ func (a *appData) restoreCurrentView() error {
 		settings := tx.Bucket([]byte("settings"))
 		if settings == nil {
 			return nil
+		}
+
+		useTailScale := settings.Get([]byte("useTailScale"))
+		if useTailScale != nil {
+			a.useTailScale = string(useTailScale) == "true"
 		}
 
 		currentView := settings.Get([]byte("currentView"))
@@ -132,7 +143,7 @@ func (a *appData) loadRouters(sel *widget.Select) error {
 				return fmt.Errorf("invalid password, network.boltdb is corrupted")
 			}
 
-			r := routerView(host, string(user), string(password))
+			r := a.routerView(host, string(user), string(password))
 			if r.err != nil {
 				dialog.ShowError(r.err, a.win)
 			}

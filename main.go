@@ -1,14 +1,14 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"net"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"go.etcd.io/bbolt"
-
-	"net/http"
-	_ "net/http/pprof"
+	"tailscale.com/tsnet"
 )
 
 type router struct {
@@ -19,6 +19,8 @@ type router struct {
 	host     string
 	user     string
 	password string
+
+	connected bool
 }
 
 type appData struct {
@@ -35,16 +37,19 @@ type appData struct {
 	key *secretKey
 
 	currentView string
+
+	ts           *tsnet.Server
+	dial         func(ctx context.Context, network, address string) (net.Conn, error)
+	cancel       context.CancelFunc
+	useTailScale bool
 }
 
-func main() {
-	go func() {
-		fmt.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
+var tcpDialer = net.Dialer{Timeout: 5 * time.Second}
 
+func main() {
 	a := app.NewWithID("github.com.bluebugs.fytastik")
 
-	myApp := &appData{routers: map[string]*router{}, app: a, win: a.NewWindow("Mikrotik Router"), bindings: []*MikrotikDataTable{}}
+	myApp := &appData{routers: map[string]*router{}, app: a, win: a.NewWindow("Mikrotik Router"), bindings: []*MikrotikDataTable{}, dial: tcpDialer.DialContext}
 	myApp.openDB()
 
 	myApp.createUI()
@@ -60,5 +65,8 @@ func (a *appData) Close() {
 		if value.leaseBinding != nil {
 			value.leaseBinding.Close()
 		}
+	}
+	if a.useTailScale {
+		a.tailScaleDisconnect()
 	}
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -11,6 +12,8 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/fynelabs/fynetailscale"
+	"tailscale.com/tsnet"
 )
 
 func (a *appData) createUI() {
@@ -79,11 +82,37 @@ func (a *appData) createUI() {
 		updateStatus(identity, nil)
 	})
 
-	a.win.SetContent(NewSplit("Gotik", container.NewBorder(container.NewBorder(nil, nil,
+	var useTailScale *widget.Check
+	updateTailScale := func(b bool) {
+		a.useTailScale = b
+		if b {
+			a.ts = new(tsnet.Server)
+
+			if err := a.ts.Start(); err != nil {
+				useTailScale.Checked = false
+				useTailScale.Refresh()
+				return
+			}
+		} else {
+			a.tailScaleDisconnect()
+		}
+	}
+
+	useTailScale = widget.NewCheck("Use tailscale", func(b bool) {
+		updateTailScale(b)
+		if a.ts != nil {
+			a.tailScaleLogin()
+		}
+		a.saveCurrentView()
+	})
+	useTailScale.Checked = a.useTailScale
+	updateTailScale(a.useTailScale)
+
+	a.win.SetContent(NewSplit("Gotik", container.NewBorder(container.NewVBox(container.NewBorder(nil, nil,
 		widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() { a.removeHost(sel) }),
 		container.NewHBox(widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() { a.newHost(sel) }),
 			widget.NewButtonWithIcon("", theme.MediaReplayIcon(), func() { a.reconnectHost(updateStatus, sel) })),
-		sel),
+		sel), useTailScale),
 		nil, nil, nil, tree),
 		container.NewBorder(header, footer, nil, nil, tabs)))
 	a.win.Resize(fyne.NewSize(800, 600))
@@ -91,6 +120,37 @@ func (a *appData) createUI() {
 	if a.salt() != nil {
 		a.getPassword(sel)
 	}
+}
+
+func (a *appData) tailScaleLogin() error {
+	lc, err := a.ts.LocalClient()
+	if err != nil {
+		return err
+	}
+
+	var ctx context.Context
+	ctx, a.cancel = context.WithCancel(context.Background())
+
+	fynetailscale.NewLogin(ctx, a.win, lc, func(succeeded bool) {
+		if succeeded {
+			a.dial = a.ts.Dial
+			fmt.Println("Connected")
+		} else {
+			a.dial = tcpDialer.DialContext
+			fmt.Println("Failed to connect")
+		}
+	})
+
+	return nil
+}
+
+func (a *appData) tailScaleDisconnect() {
+	if a.ts == nil {
+		return
+	}
+	a.ts.Close()
+	a.ts = nil
+	a.cancel()
 }
 
 func (a *appData) newHost(sel *widget.Select) {
@@ -105,7 +165,7 @@ func (a *appData) newHost(sel *widget.Select) {
 			{Text: "Password", Widget: pass},
 		}, func(confirm bool) {
 			if confirm {
-				r := routerView(host.Text, user.Text, pass.Text)
+				r := a.routerView(host.Text, user.Text, pass.Text)
 				if r.err != nil {
 					dialog.ShowError(r.err, a.win)
 					return
@@ -169,6 +229,13 @@ func (a *appData) getPassword(sel *widget.Select) {
 					return
 				}
 
+				if a.ts != nil {
+					err := a.tailScaleLogin()
+					if err != nil {
+						dialog.ShowError(err, a.win)
+					}
+				}
+
 				if err := a.loadRouters(sel); err != nil {
 					dialog.ShowError(err, a.win)
 					return
@@ -199,13 +266,14 @@ func (a *appData) buildView(tabs *container.AppTabs, view string) {
 
 	for _, cmd := range lookup {
 		log.Println("loading", cmd.path)
-		b, err := NewMikrotikData(a.current.host, a.current.user, a.current.password, cmd.path)
+		b, err := NewMikrotikData(a.dial, a.current.host, a.current.user, a.current.password, cmd.path)
 		if err != nil {
 			log.Println("failed to load", cmd.path, err)
 			continue
 		}
-		tabs.Append(container.NewTabItem(cmd.title, NewTableWithDataColumn(cmd.headers, b)))
+		tabs.Items = append(tabs.Items, container.NewTabItem(cmd.title, NewTableWithDataColumn(cmd.headers, b)))
 	}
+	tabs.SelectIndex(0)
 	tabs.Refresh()
 	log.Println("loaded", len(tabs.Items), "tabs for", view)
 }
@@ -256,7 +324,7 @@ func (a *appData) reconnectHost(updateStatus func(identity binding.String, err e
 		r.leaseBinding.Close()
 		r.leaseBinding = nil
 	}
-	r.leaseBinding, r.err = NewMikrotikData(r.host, r.user, r.password, "/ip/dhcp-server/lease")
+	r.leaseBinding, r.err = NewMikrotikData(a.dial, r.host, r.user, r.password, "/ip/dhcp-server/lease")
 	if r.err != nil {
 		updateStatus(nil, r.err)
 	} else {
@@ -264,11 +332,11 @@ func (a *appData) reconnectHost(updateStatus func(identity binding.String, err e
 	}
 }
 
-func routerView(host, user, pass string) *router {
+func (a *appData) routerView(host, user, pass string) *router {
 	var err error
 	r := &router{host: host, user: user, password: pass}
 
-	r.leaseBinding, err = NewMikrotikData(host, user, pass, "/ip/dhcp-server/lease")
+	r.leaseBinding, err = NewMikrotikData(a.dial, host, user, pass, "/ip/dhcp-server/lease")
 	if err != nil {
 		r.err = err
 	}
@@ -278,7 +346,7 @@ func routerView(host, user, pass string) *router {
 
 func (a *appData) routerIdentity(r *router) (sprintf binding.String, err error) {
 	var b *MikrotikDataTable
-	b, err = NewMikrotikData(r.host, r.user, r.password, "/system/routerboard")
+	b, err = NewMikrotikData(a.dial, r.host, r.user, r.password, "/system/routerboard")
 	if err != nil {
 		return
 	}

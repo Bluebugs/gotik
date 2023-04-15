@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"net"
 	"sync"
 
 	"fyne.io/fyne/v2/data/binding"
@@ -28,9 +29,24 @@ type MikrotikDataTable struct {
 	itemsList []*MikrotikDataItem
 }
 
-func NewMikrotikData(host, user, password, path string) (*MikrotikDataTable, error) {
-	client, err := routeros.Dial(host, user, password)
+func NewMikrotikData(dial func(ctx context.Context, network, address string) (net.Conn, error),
+	host, user, password, path string) (*MikrotikDataTable, error) {
+	// For tls: tls.Client(conn net.Conn, config *Config) *Conn
+	// with tailscale: rawConn, err := tsnet.Server.Dial(ctx context.Context, network, address string) (net.Conn, error)
+	// without: rawConn, err := netDialer.DialContext(ctx, network, addr)
+	rawConn, err := dial(context.Background(), "tcp", host)
 	if err != nil {
+		return nil, err
+	}
+
+	client, err := routeros.NewClient(rawConn)
+	if err != nil {
+		rawConn.Close()
+		return nil, err
+	}
+	err = client.Login(user, password)
+	if err != nil {
+		client.Close()
 		return nil, err
 	}
 
