@@ -119,6 +119,13 @@ func (a *appData) createUI() {
 
 	if a.salt() != nil {
 		a.getPassword(sel)
+	} else {
+		if a.ts != nil {
+			err := a.tailScaleLogin()
+			if err != nil {
+				dialog.ShowError(err, a.win)
+			}
+		}
 	}
 }
 

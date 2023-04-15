@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	fyne.io/fyne/v2 v2.3.3
-	github.com/fynelabs/fynetailscale v0.1.0
+	github.com/fynelabs/fynetailscale v0.1.1
 	github.com/go-routeros/routeros v0.0.0-20210123142807-2a44d57c6730
 	go.etcd.io/bbolt v1.3.7
 	golang.org/x/crypto v0.7.0

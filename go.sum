@@ -136,8 +136,8 @@ github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504 h1:+31CdF/okdokeFN
 github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504/go.mod h1:gLRWYfYnMA9TONeppRSikMdXlHQ97xVsPojddUv3b/E=
 github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2 h1:hnLq+55b7Zh7/2IRzWCpiTcAvjv/P8ERF+N7+xXbZhk=
 github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2/go.mod h1:eO7W361vmlPOrykIg+Rsh1SZ3tQBaOsfzZhsIOb/Lm0=
-github.com/fynelabs/fynetailscale v0.1.0 h1:IV/tfjkT0GkXKOe7GARj5v3Rye8ULL7voLXpsHkCrzM=
-github.com/fynelabs/fynetailscale v0.1.0/go.mod h1:iEKzXU+ZaQ8IpXNDNoXV+wQHFrq5RvkwXJgLxunKuAY=
+github.com/fynelabs/fynetailscale v0.1.1 h1:EcWP6HYcFcuDkwBSYcmCyD6O4pZzl42srZy4/kdlCQQ=
+github.com/fynelabs/fynetailscale v0.1.1/go.mod h1:iEKzXU+ZaQ8IpXNDNoXV+wQHFrq5RvkwXJgLxunKuAY=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/gin-contrib/sse v0.1.0 h1:Y/yl/+YNO8GZSjAhjMsSuLt29uWRFHdHYUb5lYOV9qE=
 github.com/gin-contrib/sse v0.1.0/go.mod h1:RHrZQHXnP2xjPF+u1gW/2HnVO7nvIa9PG3Gm+fLHvGI=
