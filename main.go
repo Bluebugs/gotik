@@ -19,8 +19,6 @@ type router struct {
 	host     string
 	user     string
 	password string
-
-	connected bool
 }
 
 type appData struct {
