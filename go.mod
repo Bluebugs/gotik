@@ -1,4 +1,4 @@
-module github.com/bluebugs/fytastik
+module github.com/bluebugs/gotik
 
 go 1.20
 

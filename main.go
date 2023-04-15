@@ -47,7 +47,7 @@ type appData struct {
 var tcpDialer = net.Dialer{Timeout: 5 * time.Second}
 
 func main() {
-	a := app.NewWithID("github.com.bluebugs.fytastik")
+	a := app.NewWithID("github.com.bluebugs.gotik")
 
 	myApp := &appData{routers: map[string]*router{}, app: a, win: a.NewWindow("Mikrotik Router"), bindings: []*MikrotikDataTable{}, dial: tcpDialer.DialContext}
 	myApp.openDB()
