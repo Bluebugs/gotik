@@ -40,10 +40,10 @@ dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7
 filippo.io/edwards25519 v1.0.0-rc.1 h1:m0VOOB23frXZvAOK44usCgLWvtsxIoMCTBGJZlpmGfU=
 filippo.io/edwards25519 v1.0.0-rc.1/go.mod h1:N1IkdkCkiLB6tki+MYJoSx2JTY9NUlxZE7eHn5EwJns=
 filippo.io/mkcert v1.4.3 h1:axpnmtrZMM8u5Hf4N3UXxboGemMOV+Tn+e+pkHM6E3o=
-fyne.io/fyne/v2 v2.3.3-rc1.0.20230415213520-22228b92f56d h1:0dWtZ1UOobLDW/6JGplG2soIn4isWEvr5517SB4hFTo=
-fyne.io/fyne/v2 v2.3.3-rc1.0.20230415213520-22228b92f56d/go.mod h1:PUYN4bSAdHkQfnfbnuyqEPidUVJnaOFISkG7bfNI+/w=
 fyne.io/systray v1.10.1-0.20230403195833-7dc3c09283d6 h1:lHt8dm97Uy9ggtnt9N6XOlsp76wXmRAh3SjReWm1e2Q=
 fyne.io/systray v1.10.1-0.20230403195833-7dc3c09283d6/go.mod h1:oM2AQqGJ1AMo4nNqZFYU8xYygSBZkW2hmdJ7n4yjedE=
+github.com/Bluebugs/fyne/v2 v2.0.0-20230415214710-66edad26dff8 h1:eUrQgJo1Ql2xT/pU0BSxgMSMMCHEi9a/SISMMtQS158=
+github.com/Bluebugs/fyne/v2 v2.0.0-20230415214710-66edad26dff8/go.mod h1:PUYN4bSAdHkQfnfbnuyqEPidUVJnaOFISkG7bfNI+/w=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/toml v1.1.0/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
