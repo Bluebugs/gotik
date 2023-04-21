@@ -41,7 +41,7 @@ func NewSplit(title string, leftContent fyne.CanvasObject, rightContent fyne.Can
 		menu:         menu,
 		title:        widget.NewLabel(title),
 		separator:    widget.NewSeparator(),
-		background:   canvas.NewRectangle(theme.BackgroundColor()),
+		background:   canvas.NewRectangle(theme.MenuBackgroundColor()),
 		leftContent:  leftContent,
 		rightContent: rightContent,
 	}
