@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/data/binding"
 	"go.etcd.io/bbolt"
 	"tailscale.com/tsnet"
 )
@@ -29,6 +30,7 @@ type appData struct {
 
 	bindings []*MikrotikDataTable
 	current  *router
+	identity binding.String
 
 	db *bbolt.DB
 

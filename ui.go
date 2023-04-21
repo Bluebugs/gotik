@@ -19,17 +19,6 @@ import (
 func (a *appData) createUI() {
 	tabs := container.NewAppTabs()
 
-	tree := widget.NewTreeWithStrings(map[string][]string{
-		"":       {"CAPsMAN", "Wireless", "Interfaces", "IP", "System"},
-		"IP":     {"ARP", "DHCP Server"},
-		"System": {"Certificates", "Health"},
-	})
-	tree.OnSelected = func(id string) {
-		fmt.Println("Tree node selected:", id)
-		a.buildView(tabs, id)
-		a.saveCurrentView()
-	}
-
 	header := widget.NewLabel("Not Connected")
 	header.Alignment = fyne.TextAlignCenter
 	footer := widget.NewLabel("")
@@ -41,8 +30,12 @@ func (a *appData) createUI() {
 			tabs.Refresh()
 
 			footer.SetText(fmt.Sprintf("%v", err))
-			header.Unbind()
-			header.SetText("Not Connected")
+			if a.identity != nil {
+				header.Bind(a.identity)
+			} else {
+				header.Unbind()
+				header.SetText("Not Connected")
+			}
 			return
 		}
 
@@ -50,11 +43,28 @@ func (a *appData) createUI() {
 		footer.SetText("")
 	}
 
+	tree := widget.NewTreeWithStrings(map[string][]string{
+		"":       {"CAPsMAN", "Wireless", "Interfaces", "IP", "System"},
+		"IP":     {"ARP", "DHCP Server"},
+		"System": {"Certificates", "Health"},
+	})
+	tree.OnSelected = func(id string) {
+		err := a.buildView(tabs, id)
+		if err != nil {
+			updateStatus(nil, err)
+			return
+		}
+
+		a.saveCurrentView()
+		updateStatus(a.identity, nil)
+	}
+
 	sel := widget.NewSelect([]string{}, func(s string) {
 		for _, b := range a.bindings {
 			b.Close()
 		}
 		a.bindings = []*MikrotikDataTable{}
+		a.identity = nil
 
 		r, ok := a.routers[s]
 		if !ok {
@@ -74,12 +84,20 @@ func (a *appData) createUI() {
 		}
 
 		a.current = r
+		a.identity = identity
 
 		if a.currentView != "" {
-			a.buildView(tabs, a.currentView)
+			err := a.buildView(tabs, a.currentView)
+			if err != nil {
+				updateStatus(nil, err)
+				return
+			}
+		} else {
+			tabs.Items = []*container.TabItem{}
+			tabs.Refresh()
 		}
 
-		updateStatus(identity, nil)
+		updateStatus(a.identity, nil)
 	})
 
 	var useTailScale *widget.Check
@@ -255,20 +273,18 @@ func (a *appData) getPassword(sel *widget.Select) {
 	a.win.Canvas().Focus(password)
 }
 
-func (a *appData) buildView(tabs *container.AppTabs, view string) {
+func (a *appData) buildView(tabs *container.AppTabs, view string) error {
 	a.currentView = view
 
 	if a.current == nil {
-		log.Println("no current router")
-		return
+		return errors.New("no current router")
 	}
 
 	tabs.Items = []*container.TabItem{}
 
 	lookup, ok := routerOSCommands[view]
 	if !ok {
-		log.Println("no view found for", view)
-		return
+		return errors.New("no view found for " + view)
 	}
 
 	for _, cmd := range lookup {
@@ -283,6 +299,8 @@ func (a *appData) buildView(tabs *container.AppTabs, view string) {
 	tabs.SelectIndex(0)
 	tabs.Refresh()
 	log.Println("loaded", len(tabs.Items), "tabs for", view)
+
+	return nil
 }
 
 func (a *appData) removeHost(sel *widget.Select) {
