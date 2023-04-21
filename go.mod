@@ -101,4 +101,4 @@ require (
 	nhooyr.io/websocket v1.8.7 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.3.3 => github.com/Bluebugs/fyne/v2 v2.0.0-20230415214710-66edad26dff8
+replace fyne.io/fyne/v2 v2.3.3 => fyne.io/fyne/v2 v2.3.3-rc1.0.20230421113646-c0b6014b4eb6

@@ -27,7 +27,6 @@ func NewTableWithDataColumn(column []RouterOSHeader, data *MikrotikDataTable) *w
 	})
 
 	t.ShowHeaderRow = true
-	t.StickyRowCount = 1
 	t.UpdateHeader = func(id widget.TableCellID, template fyne.CanvasObject) {
 		template.(*widget.Label).SetText(column[id.Col].title)
 	}
