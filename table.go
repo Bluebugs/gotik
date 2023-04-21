@@ -1,29 +1,91 @@
 package main
 
 import (
+	"fmt"
+
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 )
 
-func NewTableWithDataColumn(column []RouterOSHeader, data *MikrotikDataTable) *widget.Table {
+func (a *appData) NewTableWithDataColumn(column []RouterOSHeader, data *MikrotikDataTable) *widget.Table {
 	t := widget.NewTable(func() (int, int) {
 		return data.Length(), len(column)
 	}, func() fyne.CanvasObject {
-		return widget.NewLabel("Not connected yet place holder")
+		var button *Button
+		button = NewButton("MAC Address", func() {
+			msg := ""
+
+			for _, router := range a.routers {
+				if router.leaseBinding == nil {
+					continue
+				}
+				lookups, err := router.leaseBinding.Search("mac-address", button.Text)
+				if err != nil {
+					continue
+				}
+
+				for _, lookup := range lookups {
+					ipString, _ := lookup.GetValue("active-address")
+					hostnameString, _ := lookup.GetValue("host-name")
+
+					if len(hostnameString) > 0 {
+						if len(ipString) > 0 {
+							msg += fmt.Sprintf("%s (%s)\n", hostnameString, ipString)
+						} else {
+							msg += fmt.Sprintf("%s (-)\n", hostnameString)
+						}
+					} else {
+						msg += fmt.Sprintf("%s\n", ipString)
+					}
+				}
+			}
+			if len(msg) == 0 {
+				return
+			}
+
+			dialog.ShowInformation("Matching IP addresses", msg, a.win)
+		})
+		button.Hide()
+		button.Importance = widget.LowImportance
+
+		return container.NewStack(
+			widget.NewLabel("Not connected yet place holder"),
+			button,
+		)
 	}, func(i widget.TableCellID, o fyne.CanvasObject) {
-		o.(*widget.Label).Unbind()
+		label := o.(*fyne.Container).Objects[0].(*widget.Label)
+		button := o.(*fyne.Container).Objects[1].(*Button)
+
+		label.Unbind()
+		button.Unbind()
 
 		row, err := data.GetItem(i.Row)
 		if err != nil {
-			o.(*widget.Label).SetText("")
+			button.Hide()
+			label.Show()
+			label.SetText("")
 			return
 		}
 		col, err := row.Get(column[i.Col].path)
 		if err != nil {
-			o.(*widget.Label).SetText("")
+			button.Hide()
+			label.Show()
+			label.SetText("")
 			return
 		}
-		o.(*widget.Label).Bind(col)
+
+		if column[i.Col].mac {
+			label.Hide()
+			button.Show()
+			button.Bind(col)
+		} else {
+			button.Hide()
+			label.Show()
+			label.Bind(col)
+		}
 	})
 
 	t.ShowHeaderRow = true
@@ -32,4 +94,48 @@ func NewTableWithDataColumn(column []RouterOSHeader, data *MikrotikDataTable) *w
 	}
 
 	return t
+}
+
+type Button struct {
+	widget.Button
+
+	listener binding.DataListener
+	data     binding.String
+}
+
+var _ fyne.Widget = (*Button)(nil)
+
+func NewButton(text string, f func()) *Button {
+	r := Button{Button: widget.Button{Text: text, OnTapped: f}}
+	r.ExtendBaseWidget(&r)
+	return &r
+}
+
+func (b *Button) Unbind() {
+	if b.listener == nil {
+		return
+	}
+	b.data.RemoveListener(b.listener)
+	b.listener = nil
+	b.Text = ""
+}
+
+func (b *Button) Bind(s binding.String) {
+	if b.listener != nil {
+		b.Unbind()
+	}
+	b.data = s
+	b.listener = binding.NewDataListener(func() {
+		b.SetText(getString(s))
+	})
+	s.AddListener(b.listener)
+	b.SetText(getString(s))
+}
+
+func getString(data binding.String) string {
+	v, err := data.Get()
+	if err != nil {
+		return ""
+	}
+	return v
 }

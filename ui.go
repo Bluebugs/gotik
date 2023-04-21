@@ -290,7 +290,7 @@ func (a *appData) buildView(tabs *container.AppTabs, view string) error {
 			log.Println("failed to load", cmd.path, err)
 			continue
 		}
-		tabs.Items = append(tabs.Items, container.NewTabItem(cmd.title, NewTableWithDataColumn(cmd.headers, b)))
+		tabs.Items = append(tabs.Items, container.NewTabItem(cmd.title, a.NewTableWithDataColumn(cmd.headers, b)))
 	}
 	tabs.SelectIndex(0)
 	tabs.Refresh()

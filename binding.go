@@ -124,7 +124,9 @@ func (m *MikrotikDataTable) Close() {
 	m.cancel()
 }
 
-func (m *MikrotikDataTable) Search(property, value string) (*MikrotikDataItem, error) {
+func (m *MikrotikDataTable) Search(property, value string) ([]*MikrotikDataItem, error) {
+	var items []*MikrotikDataItem
+
 	for _, item := range m.items {
 		if v, ok := item.properties[property]; ok {
 			s, err := v.Get()
@@ -133,11 +135,14 @@ func (m *MikrotikDataTable) Search(property, value string) (*MikrotikDataItem, e
 			}
 
 			if s == value {
-				return item, nil
+				items = append(items, item)
 			}
 		}
 	}
-	return nil, errors.New("not found")
+	if len(items) == 0 {
+		return nil, errors.New("not found")
+	}
+	return items, nil
 }
 
 func (m *MikrotikDataTable) Get(key string) (*MikrotikDataItem, error) {
@@ -172,6 +177,13 @@ func (m *MikrotikDataItem) Get(key string) (binding.String, error) {
 		return b, nil
 	}
 	return nil, errors.New("key not found")
+}
+
+func (m *MikrotikDataItem) GetValue(key string) (string, error) {
+	if p, ok := m.properties[key]; ok {
+		return p.Get()
+	}
+	return "", errors.New("key not found")
 }
 
 func (m *MikrotikDataItem) AddListener(l binding.DataListener) {
