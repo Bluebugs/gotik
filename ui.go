@@ -43,11 +43,7 @@ func (a *appData) createUI() {
 		footer.SetText("")
 	}
 
-	tree := widget.NewTreeWithStrings(map[string][]string{
-		"":       {"CAPsMAN", "Wireless", "Interfaces", "IP", "System"},
-		"IP":     {"ARP", "DHCP Server"},
-		"System": {"Certificates", "Health"},
-	})
+	tree := widget.NewTreeWithStrings(routerOStree)
 	tree.OnSelected = func(id string) {
 		err := a.buildView(tabs, id)
 		if err != nil {

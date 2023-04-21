@@ -11,6 +11,12 @@ type RouterOSView struct {
 	headers []RouterOSHeader
 }
 
+var routerOStree = map[string][]string{
+	"":       {"CAPsMAN", "Wireless", "Interfaces", "IP", "System"},
+	"IP":     {"ARP", "DHCP Server"},
+	"System": {"Certificates", "Health"},
+}
+
 var routerOSCommands = map[string][]RouterOSView{
 	"CAPsMAN": {
 		{
