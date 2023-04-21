@@ -124,6 +124,22 @@ func (m *MikrotikDataTable) Close() {
 	m.cancel()
 }
 
+func (m *MikrotikDataTable) Search(property, value string) (*MikrotikDataItem, error) {
+	for _, item := range m.items {
+		if v, ok := item.properties[property]; ok {
+			s, err := v.Get()
+			if err != nil {
+				continue
+			}
+
+			if s == value {
+				return item, nil
+			}
+		}
+	}
+	return nil, errors.New("not found")
+}
+
 func (m *MikrotikDataTable) Get(key string) (*MikrotikDataItem, error) {
 	if _, ok := m.items[key]; !ok {
 		return nil, errors.New("key not found")
