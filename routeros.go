@@ -29,14 +29,13 @@ var routerOSCommands = map[string][]RouterOSView{
 			},
 		},
 		{
-			title: "Provisioning",
-			path: "/caps-man/provisioning",
-			headers: []RouterOSHeader{
-			},
+			title:   "Provisioning",
+			path:    "/caps-man/provisioning",
+			headers: []RouterOSHeader{},
 		},
 		{
 			title: "Configuration",
-			path: "/caps-man/configuration",
+			path:  "/caps-man/configuration",
 			headers: []RouterOSHeader{
 				{"Name", "name"},
 				{"Mode", "mode"},
@@ -52,7 +51,7 @@ var routerOSCommands = map[string][]RouterOSView{
 		},
 		{
 			title: "Channel",
-			path: "/caps-man/channel",
+			path:  "/caps-man/channel",
 			headers: []RouterOSHeader{
 				{"Name", "name"},
 				{"Frequency", "frequency"},
@@ -62,7 +61,7 @@ var routerOSCommands = map[string][]RouterOSView{
 		},
 		{
 			title: "Datapath",
-			path: "/caps-man/datapath",
+			path:  "/caps-man/datapath",
 			headers: []RouterOSHeader{
 				{"Name", "name"},
 				{"Client to Client forwarding", "client-to-client-forwarding"},
@@ -72,7 +71,7 @@ var routerOSCommands = map[string][]RouterOSView{
 		},
 		{
 			title: "Security configuration",
-			path: "/caps-man/security",
+			path:  "/caps-man/security",
 			headers: []RouterOSHeader{
 				{"Name", "name"},
 				{"Authentication Types", "authentication-types"},
@@ -83,7 +82,7 @@ var routerOSCommands = map[string][]RouterOSView{
 		},
 		{
 			title: "Access List",
-			path: "/caps-man/access-list",
+			path:  "/caps-man/access-list",
 			headers: []RouterOSHeader{
 				{"Interface", "interface"},
 				{"Signal Range", "signal-range"},
@@ -92,7 +91,7 @@ var routerOSCommands = map[string][]RouterOSView{
 		},
 		{
 			title: "Remote Cap",
-			path: "/caps-man/remote-cap",
+			path:  "/caps-man/remote-cap",
 			headers: []RouterOSHeader{
 				{"Address", "address"},
 				{"Name", "name"},
@@ -107,7 +106,7 @@ var routerOSCommands = map[string][]RouterOSView{
 		},
 		{
 			title: "Radio",
-			path: "/caps-man/radio",
+			path:  "/caps-man/radio",
 			headers: []RouterOSHeader{
 				{"Radio Max", "radio-mac"},
 				{"Remote Cap Name", "remote-cap-name"},
@@ -160,6 +159,17 @@ var routerOSCommands = map[string][]RouterOSView{
 				{"Channel Width", "channel-width"},
 				{"Frequency", "frequency"},
 				{"SSID", "ssid"},
+			},
+		},
+	},
+	"ARP": {
+		{
+			title: "ARP Table",
+			path:  "/ip/arp",
+			headers: []RouterOSHeader{
+				{"IP Address", "address"},
+				{"MAC Address", "mac-address"},
+				{"Interface", "interface"},
 			},
 		},
 	},
