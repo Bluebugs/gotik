@@ -81,6 +81,17 @@ func (a *appData) NewTableWithDataColumn(column []RouterOSHeader, data *Mikrotik
 			label.Hide()
 			button.Show()
 			button.Bind(col)
+			var exist []binding.Bool
+
+			for _, router := range a.routers {
+				if router.leaseBinding == nil {
+					continue
+				}
+
+				exist = append(exist, router.leaseBinding.Exist("mac-address", button.Text))
+			}
+			button.BindDisable(NewNot(NewOr(exist...)))
+
 		} else {
 			button.Hide()
 			label.Show()

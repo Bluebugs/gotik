@@ -107,6 +107,10 @@ func NewMikrotikData(dial func(ctx context.Context, network, address string) (ne
 								item.properties[p.Key] = binding.NewString()
 							}
 							item.properties[p.Key].Set(p.Value)
+							m.listeners.Range(func(key, value interface{}) bool {
+								key.(binding.DataListener).DataChanged()
+								return true
+							})
 						}
 					}
 				case <-ctx.Done():
@@ -121,6 +125,7 @@ func NewMikrotikData(dial func(ctx context.Context, network, address string) (ne
 }
 
 func (m *MikrotikDataTable) Close() {
+	m.listeners = sync.Map{}
 	m.cancel()
 }
 
@@ -143,6 +148,10 @@ func (m *MikrotikDataTable) Search(property, value string) ([]*MikrotikDataItem,
 		return nil, errors.New("not found")
 	}
 	return items, nil
+}
+
+func (m *MikrotikDataTable) Exist(property, value string) binding.Bool {
+	return &MikrotikExist{property: property, value: value, m: m}
 }
 
 func (m *MikrotikDataTable) Get(key string) (*MikrotikDataItem, error) {
@@ -219,4 +228,40 @@ func newMikrotikDataItem(r *proto.Sentence) *MikrotikDataItem {
 		}
 	}
 	return item
+}
+
+type MikrotikExist struct {
+	property, value string
+
+	m *MikrotikDataTable
+}
+
+var _ binding.Bool = (*MikrotikExist)(nil)
+
+func (b *MikrotikExist) Get() (bool, error) {
+	for _, item := range b.m.items {
+		if v, ok := item.properties[b.property]; ok {
+			s, err := v.Get()
+			if err != nil {
+				continue
+			}
+
+			if s == b.value {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+func (b *MikrotikExist) Set(v bool) error {
+	return errors.New("not supported")
+}
+
+func (b *MikrotikExist) AddListener(l binding.DataListener) {
+	b.m.AddListener(l)
+}
+
+func (b *MikrotikExist) RemoveListener(l binding.DataListener) {
+	b.m.RemoveListener(l)
 }
