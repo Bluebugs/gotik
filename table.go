@@ -92,6 +92,9 @@ func (a *appData) NewTableWithDataColumn(column []RouterOSHeader, data *Mikrotik
 	t.UpdateHeader = func(id widget.TableCellID, template fyne.CanvasObject) {
 		template.(*widget.Label).SetText(column[id.Col].title)
 	}
+	data.AddListener(binding.NewDataListener(func() {
+		t.Refresh()
+	}))
 
 	return t
 }
