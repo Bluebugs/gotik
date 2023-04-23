@@ -37,7 +37,7 @@ func (a *appData) NewTableWithDataColumn(column []RouterOSHeader, data *Mikrotik
 						} else {
 							msg += fmt.Sprintf("%s (-)\n", hostnameString)
 						}
-					} else {
+					} else if len(ipString) > 0 {
 						msg += fmt.Sprintf("%s\n", ipString)
 					}
 				}
@@ -46,7 +46,7 @@ func (a *appData) NewTableWithDataColumn(column []RouterOSHeader, data *Mikrotik
 				return
 			}
 
-			dialog.ShowInformation("Matching IP addresses", msg, a.win)
+			dialog.ShowInformation("Matching information for "+button.Text, msg, a.win)
 		})
 		button.Hide()
 		button.Importance = widget.LowImportance
