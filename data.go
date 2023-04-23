@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"log"
+	"strings"
 
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/storage"
@@ -12,6 +13,9 @@ import (
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/nacl/secretbox"
 )
+
+var settingBucketName = []byte("settings")
+var routersBucketName = []byte("routers")
 
 func (a *appData) openDB() (string, error) {
 	dbURI, err := storage.Child(a.app.Storage().RootURI(), "network.boltdb")
@@ -27,46 +31,65 @@ func (a *appData) openDB() (string, error) {
 	return a.restoreCurrentView()
 }
 
+func saveHost(tx *bbolt.Tx, key *secretKey, host string, ssl bool, user string, password string) error {
+	routers, err := tx.CreateBucketIfNotExists(routersBucketName)
+	if err != nil {
+		return err
+	}
+
+	hostBucket, err := routers.CreateBucketIfNotExists([]byte(host))
+	if err != nil {
+		return err
+	}
+
+	var sslBytes []byte
+	if ssl {
+		sslBytes = key.Seal([]byte("true"))
+	} else {
+		sslBytes = key.Seal([]byte("false"))
+	}
+	err = hostBucket.Put([]byte("ssl"), sslBytes)
+	if err != nil {
+		return err
+	}
+
+	err = hostBucket.Put([]byte("user"), key.Seal([]byte(user)))
+	if err != nil {
+		return err
+	}
+
+	err = hostBucket.Put([]byte("password"), key.Seal([]byte(password)))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (a *appData) saveRouter(r *router, password string) error {
 	return a.db.Update(func(tx *bbolt.Tx) error {
-		routers, err := tx.CreateBucketIfNotExists([]byte("routers"))
-		if err != nil {
-			return err
-		}
-
-		host, err := routers.CreateBucketIfNotExists([]byte(r.host))
-		if err != nil {
-			return err
-		}
-
-		err = host.Put([]byte("user"), a.key.Seal([]byte(r.user)))
-		if err != nil {
-			return err
-		}
-
-		err = host.Put([]byte("password"), a.key.Seal([]byte(password)))
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return saveHost(tx, a.key, r.host, r.ssl, r.user, password)
 	})
+}
+
+func deleteHost(tx *bbolt.Tx, host string) error {
+	routers := tx.Bucket(routersBucketName)
+	if routers == nil {
+		return nil
+	}
+
+	return routers.DeleteBucket([]byte(host))
 }
 
 func (a *appData) deleteRouter(r *router) error {
 	return a.db.Update(func(tx *bbolt.Tx) error {
-		routers := tx.Bucket([]byte("routers"))
-		if routers == nil {
-			return nil
-		}
-
-		return routers.DeleteBucket([]byte(r.host))
+		return deleteHost(tx, r.host)
 	})
 }
 
 func (a *appData) saveCurrentView() error {
 	return a.db.Update(func(tx *bbolt.Tx) error {
-		settings, err := tx.CreateBucketIfNotExists([]byte("settings"))
+		settings, err := tx.CreateBucketIfNotExists(settingBucketName)
 		if err != nil {
 			return err
 		}
@@ -90,7 +113,7 @@ func (a *appData) saveCurrentView() error {
 func (a *appData) restoreCurrentView() (string, error) {
 	var r string
 	return r, a.db.View(func(tx *bbolt.Tx) error {
-		settings := tx.Bucket([]byte("settings"))
+		settings := tx.Bucket(settingBucketName)
 		if settings == nil {
 			return nil
 		}
@@ -120,8 +143,10 @@ func (a *appData) restoreCurrentView() (string, error) {
 }
 
 func (a *appData) loadRouters(sel *widget.Select) error {
-	return a.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte("routers"))
+	resave := []*router{}
+
+	err := a.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(routersBucketName)
 		if b == nil {
 			log.Println("no routers in network.boltdb")
 			return nil
@@ -129,10 +154,26 @@ func (a *appData) loadRouters(sel *widget.Select) error {
 
 		err := b.ForEach(func(k, v []byte) error {
 			host := string(k)
+			needResave := false
+
 			b := b.Bucket(k)
 			if b == nil {
 				log.Println("incorrect host", host, "in network.boltdb, skipping")
 				return nil
+			}
+
+			ssl := false
+			cipherSSL := b.Get([]byte("ssl"))
+			if cipherSSL == nil {
+				host = strings.TrimSuffix(host, ":8728")
+				needResave = true
+			} else {
+				clearSSL, ok := a.key.Unseal(cipherSSL)
+				if !ok {
+					return fmt.Errorf("invalid ssl, network.boltdb is corrupted")
+				}
+
+				ssl = string(clearSSL) == "true"
 			}
 
 			cipherUser := b.Get([]byte("user"))
@@ -157,11 +198,14 @@ func (a *appData) loadRouters(sel *widget.Select) error {
 				return fmt.Errorf("invalid password, network.boltdb is corrupted")
 			}
 
-			r := a.routerView(host, string(user), string(password))
+			r := a.routerView(host, ssl, string(user), string(password))
 			if r.err != nil {
 				dialog.ShowError(r.err, a.win)
 			}
 
+			if needResave {
+				resave = append(resave, r)
+			}
 			a.routers[host] = r
 			sel.Options = append(sel.Options, r.host)
 			return nil
@@ -172,11 +216,27 @@ func (a *appData) loadRouters(sel *widget.Select) error {
 		sel.Refresh()
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	if len(resave) == 0 {
+		return nil
+	}
+
+	return a.db.Update(func(tx *bbolt.Tx) error {
+		for _, r := range resave {
+			saveHost(tx, a.key, r.host, r.ssl, r.user, r.password)
+
+			deleteHost(tx, r.host+":8728")
+		}
+		return nil
+	})
 }
 
 func (a *appData) salt() (s []byte) {
 	a.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte("settings"))
+		b := tx.Bucket(settingBucketName)
 		if b == nil {
 			return nil
 		}
@@ -204,7 +264,7 @@ func (a *appData) createKey(password string) error {
 	}
 
 	err = a.db.Update(func(tx *bbolt.Tx) error {
-		b, err := tx.CreateBucketIfNotExists([]byte("settings"))
+		b, err := tx.CreateBucketIfNotExists(settingBucketName)
 		if err != nil {
 			return err
 		}

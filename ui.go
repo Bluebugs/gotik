@@ -28,7 +28,7 @@ func (a *appData) createUI(lastHost string) {
 	footer := widget.NewLabel("")
 	footer.Alignment = fyne.TextAlignCenter
 
-	updateStatus := func(identity binding.String, err error) {
+	updateStatus := func(identity binding.String, ssl bool, err error) {
 		if err != nil {
 			tabs.Items = []*container.TabItem{}
 			tabs.Refresh()
@@ -43,6 +43,12 @@ func (a *appData) createUI(lastHost string) {
 			return
 		}
 
+		if ssl {
+			header.TextStyle = fyne.TextStyle{Bold: true}
+		} else {
+			header.TextStyle = fyne.TextStyle{}
+		}
+
 		header.Bind(identity)
 		footer.SetText("")
 	}
@@ -51,12 +57,12 @@ func (a *appData) createUI(lastHost string) {
 	tree.OnSelected = func(id string) {
 		err := a.buildView(tabs, id)
 		if err != nil {
-			updateStatus(nil, err)
+			updateStatus(nil, false, err)
 			return
 		}
 
 		a.saveCurrentView()
-		updateStatus(a.identity, nil)
+		updateStatus(a.identity, a.current.ssl, nil)
 	}
 
 	sel := widget.NewSelect([]string{}, a.selectHost(tabs, updateStatus))
@@ -142,17 +148,19 @@ func (a *appData) tailScaleDisconnect() {
 
 func (a *appData) newHost(sel *widget.Select) {
 	host := widget.NewEntry()
-	host.PlaceHolder = "127.0.0.1:8728"
+	host.PlaceHolder = "127.0.0.1"
 	user := widget.NewEntry()
 	pass := widget.NewPasswordEntry()
+	ssl := widget.NewCheck("", nil)
 	dialog.ShowForm("New router", "Connect", "Cancel",
 		[]*widget.FormItem{
 			{Text: "Host", Widget: host},
 			{Text: "User", Widget: user},
 			{Text: "Password", Widget: pass},
+			{Text: "SSL", Widget: ssl},
 		}, func(confirm bool) {
 			if confirm {
-				r := a.routerView(host.Text, user.Text, pass.Text)
+				r := a.routerView(host.Text, ssl.Checked, user.Text, pass.Text)
 				if r.err != nil {
 					dialog.ShowError(r.err, a.win)
 					return
@@ -180,7 +188,7 @@ func (a *appData) newHost(sel *widget.Select) {
 	a.win.Canvas().Focus(host)
 }
 
-func (a *appData) selectHost(tabs *container.AppTabs, updateStatus func(identity binding.String, err error)) func(s string) {
+func (a *appData) selectHost(tabs *container.AppTabs, updateStatus func(identity binding.String, ssl bool, err error)) func(s string) {
 	return func(s string) {
 		for _, b := range a.bindings {
 			b.Close()
@@ -190,18 +198,18 @@ func (a *appData) selectHost(tabs *container.AppTabs, updateStatus func(identity
 
 		r, ok := a.routers[s]
 		if !ok {
-			updateStatus(nil, errors.New("router not found"))
+			updateStatus(nil, false, errors.New("router not found"))
 			return
 		}
 
 		if r.err != nil {
-			updateStatus(nil, r.err)
+			updateStatus(nil, false, r.err)
 			return
 		}
 
 		identity, err := a.routerIdentity(r)
 		if err != nil {
-			updateStatus(nil, err)
+			updateStatus(nil, false, err)
 			return
 		}
 
@@ -211,7 +219,7 @@ func (a *appData) selectHost(tabs *container.AppTabs, updateStatus func(identity
 		if a.currentView != "" {
 			err := a.buildView(tabs, a.currentView)
 			if err != nil {
-				updateStatus(nil, err)
+				updateStatus(nil, false, err)
 				return
 			}
 		} else {
@@ -220,7 +228,7 @@ func (a *appData) selectHost(tabs *container.AppTabs, updateStatus func(identity
 		}
 
 		a.saveCurrentView()
-		updateStatus(a.identity, nil)
+		updateStatus(a.identity, a.current.ssl, nil)
 	}
 }
 
@@ -306,7 +314,7 @@ func (a *appData) buildView(tabs *container.AppTabs, view string) error {
 	selectIndex := 0
 	for _, cmd := range lookup {
 		log.Println("loading", cmd.path)
-		b, err := NewMikrotikData(a.dial, a.current.host, a.current.user, a.current.password, cmd.path)
+		b, err := NewMikrotikData(a.dial, a.current.host, a.current.ssl, a.current.user, a.current.password, cmd.path)
 		if err != nil {
 			log.Println("failed to load", cmd.path, err)
 			continue
@@ -354,14 +362,14 @@ func (a *appData) removeHost(sel *widget.Select) {
 	sel.Refresh()
 }
 
-func (a *appData) reconnectHost(updateStatus func(identity binding.String, err error), sel *widget.Select) {
+func (a *appData) reconnectHost(updateStatus func(identity binding.String, ssl bool, err error), sel *widget.Select) {
 	if sel.Selected == "" {
 		return
 	}
 
 	r, ok := a.routers[sel.Selected]
 	if !ok {
-		updateStatus(nil, fmt.Errorf("no router found for %s", sel.Selected))
+		updateStatus(nil, false, fmt.Errorf("no router found for %s", sel.Selected))
 		return
 	}
 
@@ -369,19 +377,19 @@ func (a *appData) reconnectHost(updateStatus func(identity binding.String, err e
 		r.leaseBinding.Close()
 		r.leaseBinding = nil
 	}
-	r.leaseBinding, r.err = NewMikrotikData(a.dial, r.host, r.user, r.password, "/ip/dhcp-server/lease")
+	r.leaseBinding, r.err = NewMikrotikData(a.dial, r.host, r.ssl, r.user, r.password, "/ip/dhcp-server/lease")
 	if r.err != nil {
-		updateStatus(nil, r.err)
+		updateStatus(nil, false, r.err)
 	} else {
 		sel.SetSelected(sel.Selected)
 	}
 }
 
-func (a *appData) routerView(host, user, pass string) *router {
+func (a *appData) routerView(host string, ssl bool, user, pass string) *router {
 	var err error
-	r := &router{host: host, user: user, password: pass}
+	r := &router{host: host, user: user, password: pass, ssl: ssl}
 
-	r.leaseBinding, err = NewMikrotikData(a.dial, host, user, pass, "/ip/dhcp-server/lease")
+	r.leaseBinding, err = NewMikrotikData(a.dial, host, ssl, user, pass, "/ip/dhcp-server/lease")
 	if err != nil {
 		r.err = err
 	}
@@ -391,7 +399,7 @@ func (a *appData) routerView(host, user, pass string) *router {
 
 func (a *appData) routerIdentity(r *router) (sprintf binding.String, err error) {
 	var b *MikrotikDataTable
-	b, err = NewMikrotikData(a.dial, r.host, r.user, r.password, "/system/routerboard")
+	b, err = NewMikrotikData(a.dial, r.host, r.ssl, r.user, r.password, "/system/routerboard")
 	if err != nil {
 		return
 	}

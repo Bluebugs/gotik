@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"sync"
@@ -30,13 +32,19 @@ type MikrotikDataTable struct {
 }
 
 func NewMikrotikData(dial func(ctx context.Context, network, address string) (net.Conn, error),
-	host, user, password, path string) (*MikrotikDataTable, error) {
-	// For tls: tls.Client(conn net.Conn, config *Config) *Conn
-	// with tailscale: rawConn, err := tsnet.Server.Dial(ctx context.Context, network, address string) (net.Conn, error)
-	// without: rawConn, err := netDialer.DialContext(ctx, network, addr)
-	rawConn, err := dial(context.Background(), "tcp", host)
+	host string, ssl bool, user, password, path string) (*MikrotikDataTable, error) {
+	port := 8728
+	if ssl {
+		port = 8729
+	}
+
+	rawConn, err := dial(context.Background(), "tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
 		return nil, err
+	}
+
+	if ssl {
+		rawConn = tls.Client(rawConn, &tls.Config{InsecureSkipVerify: true})
 	}
 
 	client, err := routeros.NewClient(rawConn)

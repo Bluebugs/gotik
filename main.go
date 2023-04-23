@@ -20,6 +20,7 @@ type router struct {
 	host     string
 	user     string
 	password string
+	ssl      bool
 }
 
 type appData struct {
