@@ -95,8 +95,11 @@ func (a *appData) createUI(lastHost string) {
 
 	a.win.SetContent(NewSplit("Gotik", container.NewBorder(container.NewVBox(container.NewBorder(nil, nil,
 		widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() { a.removeHost(sel) }),
-		container.NewHBox(widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() { a.newHost(sel) }),
-			widget.NewButtonWithIcon("", theme.MediaReplayIcon(), func() { a.reconnectHost(updateStatus, sel) })),
+		container.NewHBox(
+			widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() { a.newHost(sel) }),
+			widget.NewButtonWithIcon("", theme.MediaReplayIcon(), func() { a.reconnectHost(updateStatus, sel) }),
+			widget.NewButtonWithIcon("", theme.SearchIcon(), func() { a.displayNeighbor() }),
+		),
 		sel), useTailScale),
 		nil, nil, nil, tree),
 		container.NewBorder(header, footer, nil, nil, tabs)))
@@ -144,6 +147,19 @@ func (a *appData) tailScaleDisconnect() {
 	a.ts = nil
 	a.cancel()
 	a.cancel = func() {}
+}
+
+func (a *appData) displayNeighbor() {
+	neighbors := widget.NewListWithData(a.neighbors,
+		func() fyne.CanvasObject {
+			return widget.NewLabel("Mikrotik router somewhere (cc:2d:e0:e1:09:2a, 255.255.255.255) Mikrotik - 6.49.2 (stable)")
+		},
+		func(i binding.DataItem, o fyne.CanvasObject) {
+			o.(*widget.Label).Bind(i.(binding.String))
+		})
+	content := container.New(&moreSpace{a.win}, neighbors)
+
+	dialog.ShowCustom("Neighbors", "Close", content, a.win)
 }
 
 func (a *appData) newHost(sel *widget.Select) {

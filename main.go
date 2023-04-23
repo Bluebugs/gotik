@@ -24,7 +24,8 @@ type router struct {
 }
 
 type appData struct {
-	routers map[string]*router
+	routers   map[string]*router
+	neighbors *MikrotikRouterList
 
 	app fyne.App
 	win fyne.Window
@@ -51,7 +52,15 @@ func main() {
 	a := app.NewWithID("github.com.bluebugs.gotik")
 	a.Settings().SetTheme(&myTheme{})
 
-	myApp := &appData{routers: map[string]*router{}, app: a, win: a.NewWindow("Mikrotik Router"), bindings: []*MikrotikDataTable{}, dial: tcpDialer.DialContext, cancel: func() {}}
+	myApp := &appData{
+		routers:   map[string]*router{},
+		app:       a,
+		win:       a.NewWindow("Mikrotik Router"),
+		bindings:  []*MikrotikDataTable{},
+		dial:      tcpDialer.DialContext,
+		cancel:    func() {},
+		neighbors: NewMikrotikRouterList(),
+	}
 	lastHost, _ := myApp.openDB()
 
 	myApp.createUI(lastHost)
