@@ -36,7 +36,7 @@ type appData struct {
 
 	key *secretKey
 
-	currentView string
+	currentView, currentTab string
 
 	ts           *tsnet.Server
 	dial         func(ctx context.Context, network, address string) (net.Conn, error)
@@ -51,9 +51,9 @@ func main() {
 	a.Settings().SetTheme(&myTheme{})
 
 	myApp := &appData{routers: map[string]*router{}, app: a, win: a.NewWindow("Mikrotik Router"), bindings: []*MikrotikDataTable{}, dial: tcpDialer.DialContext, cancel: func() {}}
-	myApp.openDB()
+	lastHost, _ := myApp.openDB()
 
-	myApp.createUI()
+	myApp.createUI(lastHost)
 	defer myApp.Close()
 	myApp.win.ShowAndRun()
 }

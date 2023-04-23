@@ -16,8 +16,12 @@ import (
 	"tailscale.com/tsnet"
 )
 
-func (a *appData) createUI() {
+func (a *appData) createUI(lastHost string) {
 	tabs := container.NewAppTabs()
+	tabs.OnSelected = func(ti *container.TabItem) {
+		a.currentTab = ti.Text
+		a.saveCurrentView()
+	}
 
 	header := widget.NewLabel("Not Connected")
 	header.Alignment = fyne.TextAlignCenter
@@ -55,46 +59,7 @@ func (a *appData) createUI() {
 		updateStatus(a.identity, nil)
 	}
 
-	sel := widget.NewSelect([]string{}, func(s string) {
-		for _, b := range a.bindings {
-			b.Close()
-		}
-		a.bindings = []*MikrotikDataTable{}
-		a.identity = nil
-
-		r, ok := a.routers[s]
-		if !ok {
-			updateStatus(nil, errors.New("router not found"))
-			return
-		}
-
-		if r.err != nil {
-			updateStatus(nil, r.err)
-			return
-		}
-
-		identity, err := a.routerIdentity(r)
-		if err != nil {
-			updateStatus(nil, err)
-			return
-		}
-
-		a.current = r
-		a.identity = identity
-
-		if a.currentView != "" {
-			err := a.buildView(tabs, a.currentView)
-			if err != nil {
-				updateStatus(nil, err)
-				return
-			}
-		} else {
-			tabs.Items = []*container.TabItem{}
-			tabs.Refresh()
-		}
-
-		updateStatus(a.identity, nil)
-	})
+	sel := widget.NewSelect([]string{}, a.selectHost(tabs, updateStatus))
 
 	var useTailScale *widget.Check
 	updateTailScale := func(b bool) {
@@ -132,7 +97,7 @@ func (a *appData) createUI() {
 	a.win.Resize(fyne.NewSize(800, 600))
 
 	if a.salt() != nil {
-		a.getPassword(sel)
+		a.getPassword(lastHost, sel)
 	} else {
 		if a.ts != nil {
 			err := a.tailScaleLogin()
@@ -215,6 +180,50 @@ func (a *appData) newHost(sel *widget.Select) {
 	a.win.Canvas().Focus(host)
 }
 
+func (a *appData) selectHost(tabs *container.AppTabs, updateStatus func(identity binding.String, err error)) func(s string) {
+	return func(s string) {
+		for _, b := range a.bindings {
+			b.Close()
+		}
+		a.bindings = []*MikrotikDataTable{}
+		a.identity = nil
+
+		r, ok := a.routers[s]
+		if !ok {
+			updateStatus(nil, errors.New("router not found"))
+			return
+		}
+
+		if r.err != nil {
+			updateStatus(nil, r.err)
+			return
+		}
+
+		identity, err := a.routerIdentity(r)
+		if err != nil {
+			updateStatus(nil, err)
+			return
+		}
+
+		a.current = r
+		a.identity = identity
+
+		if a.currentView != "" {
+			err := a.buildView(tabs, a.currentView)
+			if err != nil {
+				updateStatus(nil, err)
+				return
+			}
+		} else {
+			tabs.Items = []*container.TabItem{}
+			tabs.Refresh()
+		}
+
+		a.saveCurrentView()
+		updateStatus(a.identity, nil)
+	}
+}
+
 func (a *appData) createPassword(gotKey func()) {
 	password := widget.NewPasswordEntry()
 	repeat := widget.NewPasswordEntry()
@@ -239,7 +248,7 @@ func (a *appData) createPassword(gotKey func()) {
 	a.win.Canvas().Focus(password)
 }
 
-func (a *appData) getPassword(sel *widget.Select) {
+func (a *appData) getPassword(lastHost string, sel *widget.Select) {
 	password := widget.NewPasswordEntry()
 	dialog.ShowForm("Password", "Unlock", "Cancel",
 		[]*widget.FormItem{
@@ -263,7 +272,17 @@ func (a *appData) getPassword(sel *widget.Select) {
 					return
 				}
 				if len(sel.Options) > 0 {
-					sel.SetSelectedIndex(0)
+					found := false
+					for index, host := range sel.Options {
+						if host == lastHost {
+							found = true
+							sel.SetSelectedIndex(index)
+							break
+						}
+					}
+					if !found {
+						sel.SetSelectedIndex(0)
+					}
 				}
 			}
 		}, a.win)
@@ -284,6 +303,7 @@ func (a *appData) buildView(tabs *container.AppTabs, view string) error {
 		return errors.New("no view found for " + view)
 	}
 
+	selectIndex := 0
 	for _, cmd := range lookup {
 		log.Println("loading", cmd.path)
 		b, err := NewMikrotikData(a.dial, a.current.host, a.current.user, a.current.password, cmd.path)
@@ -291,9 +311,12 @@ func (a *appData) buildView(tabs *container.AppTabs, view string) error {
 			log.Println("failed to load", cmd.path, err)
 			continue
 		}
+		if a.currentTab == cmd.title {
+			selectIndex = len(tabs.Items)
+		}
 		tabs.Items = append(tabs.Items, container.NewTabItem(cmd.title, a.NewTableWithDataColumn(cmd.headers, b)))
 	}
-	tabs.SelectIndex(0)
+	tabs.SelectIndex(selectIndex)
 	tabs.Refresh()
 	log.Println("loaded", len(tabs.Items), "tabs for", view)
 

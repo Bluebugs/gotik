@@ -13,20 +13,18 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
-func (a *appData) openDB() error {
+func (a *appData) openDB() (string, error) {
 	dbURI, err := storage.Child(a.app.Storage().RootURI(), "network.boltdb")
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	a.db, err = bbolt.Open(dbURI.Path(), 0600, nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	a.restoreCurrentView()
-
-	return nil
+	return a.restoreCurrentView()
 }
 
 func (a *appData) saveRouter(r *router, password string) error {
@@ -79,12 +77,19 @@ func (a *appData) saveCurrentView() error {
 			settings.Put([]byte("useTailScale"), []byte("false"))
 		}
 
+		if a.current != nil {
+			settings.Put([]byte("currentHost"), []byte(a.current.host))
+		}
+
+		settings.Put([]byte("currentTab"), []byte(a.currentTab))
+
 		return settings.Put([]byte("currentView"), []byte(a.currentView))
 	})
 }
 
-func (a *appData) restoreCurrentView() error {
-	return a.db.View(func(tx *bbolt.Tx) error {
+func (a *appData) restoreCurrentView() (string, error) {
+	var r string
+	return r, a.db.View(func(tx *bbolt.Tx) error {
 		settings := tx.Bucket([]byte("settings"))
 		if settings == nil {
 			return nil
@@ -95,12 +100,21 @@ func (a *appData) restoreCurrentView() error {
 			a.useTailScale = string(useTailScale) == "true"
 		}
 
-		currentView := settings.Get([]byte("currentView"))
-		if currentView == nil {
-			return nil
+		currentHost := settings.Get([]byte("currentHost"))
+		if currentHost != nil {
+			r = string(currentHost)
 		}
 
-		a.currentView = string(currentView)
+		currentTab := settings.Get([]byte("currentTab"))
+		if currentTab != nil {
+			a.currentTab = string(currentTab)
+		}
+
+		currentView := settings.Get([]byte("currentView"))
+		if currentView != nil {
+			a.currentView = string(currentView)
+		}
+
 		return nil
 	})
 }
