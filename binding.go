@@ -12,7 +12,144 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/go-routeros/routeros"
 	"github.com/go-routeros/routeros/proto"
+	"github.com/pjediny/mndp/pkg/mndp"
 )
+
+type MikrotikRouter struct {
+	mndp.Message
+
+	parent *MikrotikRouterList
+}
+
+var _ binding.String = (*MikrotikRouter)(nil)
+
+type MikrotikRouterList struct {
+	ch chan *mndp.Message
+
+	routers map[net.Addr]*MikrotikRouter
+	sorted  []net.Addr
+
+	listeners sync.Map
+}
+
+var _ binding.DataList = (*MikrotikRouterList)(nil)
+
+func NewMikrotikRouterList() *MikrotikRouterList {
+	r := &MikrotikRouterList{ch: make(chan *mndp.Message), routers: map[net.Addr]*MikrotikRouter{}}
+	listener := mndp.NewListener()
+	listener.Listen(r.ch)
+
+	go func() {
+		for {
+			msg, ok := <-r.ch
+			if !ok {
+				return
+			}
+			if msg == nil {
+				continue
+			}
+			_, okv4 := msg.Fields[mndp.TagIPv4Addr]
+			_, okv6 := msg.Fields[mndp.TagIPv6Addr]
+			if !okv4 && !okv6 {
+				continue
+			}
+			router, ok := r.routers[msg.Src]
+			if !ok {
+				router = &MikrotikRouter{*msg, r}
+				r.routers[msg.Src] = router
+				r.sorted = append(r.sorted, msg.Src)
+			} else {
+				router.Message = *msg
+			}
+			r.listeners.Range(func(key, value interface{}) bool {
+				key.(binding.DataListener).DataChanged()
+				return true
+			})
+		}
+	}()
+
+	return r
+}
+
+func (m *MikrotikRouterList) AddListener(l binding.DataListener) {
+	m.listeners.Store(l, true)
+	go l.DataChanged()
+}
+
+func (m *MikrotikRouterList) RemoveListener(l binding.DataListener) {
+	m.listeners.Delete(l)
+}
+
+func (m *MikrotikRouterList) GetItem(index int) (binding.DataItem, error) {
+	if index < 0 || index >= len(m.sorted) {
+		return nil, errors.New("index out of range")
+	}
+	return m.routers[m.sorted[index]], nil
+}
+
+func (m *MikrotikRouterList) Length() int {
+	return len(m.routers)
+}
+
+func (m *MikrotikRouter) AddListener(l binding.DataListener) {
+	m.parent.AddListener(l)
+}
+
+func (m *MikrotikRouter) RemoveListener(l binding.DataListener) {
+	m.parent.RemoveListener(l)
+}
+
+func (m *MikrotikRouter) getValue(tag mndp.TLVTag) string {
+	v, ok := m.Fields[tag]
+	if !ok {
+		return ""
+	}
+	r := ""
+	switch v.Tag {
+	case mndp.TagMACAddr:
+		r = v.ValAsHardwareAddr().String()
+	case mndp.TagIdentity:
+		r = v.ValAsString()
+	case mndp.TagVersion:
+		r = v.ValAsString()
+	case mndp.TagPlatform:
+		r = v.ValAsString()
+	case mndp.TagUptime:
+		r = v.ValAsDuration().String()
+	case mndp.TagSoftwareID:
+		r = v.ValAsString()
+	case mndp.TagBoard:
+		r = v.ValAsString()
+	case mndp.TagUnpack:
+		r = v.ValAsHexString()
+	case mndp.TagIPv6Addr:
+		r = v.ValAsIP().String()
+	case mndp.TagInterfaceName:
+		r = v.ValAsString()
+	case mndp.TagIPv4Addr:
+		r = v.ValAsIP().String()
+	default:
+		r = v.ValAsHexString()
+	}
+	return r
+}
+
+func (m *MikrotikRouter) Get() (string, error) {
+	identity := m.getValue(mndp.TagIdentity)
+	mac := m.getValue(mndp.TagMACAddr)
+	platform := m.getValue(mndp.TagPlatform)
+	version := m.getValue(mndp.TagVersion)
+	ip := m.getValue(mndp.TagIPv4Addr)
+	if ip == "" {
+		ip = m.getValue(mndp.TagIPv6Addr)
+	}
+
+	return fmt.Sprintf("%s (%s, %s) %s - %s", identity, mac, ip, platform, version), nil
+}
+
+func (m *MikrotikRouter) Set(string) error {
+	return errors.New("not implemented")
+}
 
 type MikrotikDataItem struct {
 	id string
