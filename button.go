@@ -34,6 +34,9 @@ func (b *Button) Unbind() {
 }
 
 func (b *Button) Bind(s binding.String) {
+	if b.data == s {
+		goto refreshText
+	}
 	if b.dataListener != nil {
 		b.Unbind()
 	}
@@ -42,6 +45,7 @@ func (b *Button) Bind(s binding.String) {
 		b.SetText(getString(s))
 	})
 	s.AddListener(b.dataListener)
+refreshText:
 	b.SetText(getString(s))
 }
 
@@ -54,19 +58,35 @@ func (b *Button) UnbindDisable() {
 }
 
 func (b *Button) BindDisable(data binding.Bool) {
-	if b.disableListener != nil {
-		b.UnbindDisable()
-	}
-	b.disableListener = binding.NewDataListener(func() {
-		if getBool(data) {
+	applyDisable := func(disable bool) {
+		if disable {
 			b.Disable()
 		} else {
 			b.Enable()
 		}
+	}
+
+	if b.disable == data {
+		goto refreshDisable
+	}
+	if b.disableListener != nil {
+		b.UnbindDisable()
+	}
+
+	b.disableListener = binding.NewDataListener(func() {
+		isDisable := b.Disabled()
+		disable := getBool(data)
+		if isDisable == disable {
+			return
+		}
+		applyDisable(disable)
 	})
 	b.disable = data
 	b.disable.AddListener(b.disableListener)
-	b.Enable()
+
+refreshDisable:
+	disable := getBool(data)
+	applyDisable(disable)
 }
 
 func getString(data binding.String) string {
