@@ -50,7 +50,7 @@ func main() {
 	a := app.NewWithID("github.com.bluebugs.gotik")
 	a.Settings().SetTheme(&myTheme{})
 
-	myApp := &appData{routers: map[string]*router{}, app: a, win: a.NewWindow("Mikrotik Router"), bindings: []*MikrotikDataTable{}, dial: tcpDialer.DialContext}
+	myApp := &appData{routers: map[string]*router{}, app: a, win: a.NewWindow("Mikrotik Router"), bindings: []*MikrotikDataTable{}, dial: tcpDialer.DialContext, cancel: func() {}}
 	myApp.openDB()
 
 	myApp.createUI()

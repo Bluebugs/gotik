@@ -172,6 +172,7 @@ func (a *appData) tailScaleDisconnect() {
 	a.ts.Close()
 	a.ts = nil
 	a.cancel()
+	a.cancel = func() {}
 }
 
 func (a *appData) newHost(sel *widget.Select) {
