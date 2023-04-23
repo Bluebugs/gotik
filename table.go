@@ -96,6 +96,7 @@ func (a *appData) NewTableWithDataColumn(column []RouterOSHeader, data *Mikrotik
 			button.Hide()
 			label.Show()
 			label.Bind(col)
+			label.Wrapping = fyne.TextTruncate
 		}
 	})
 
