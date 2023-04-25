@@ -151,6 +151,14 @@ func (m *MikrotikRouter) Set(string) error {
 	return errors.New("not implemented")
 }
 
+func (m *MikrotikRouter) IP() string {
+	ip := m.getValue(mndp.TagIPv4Addr)
+	if ip == "" {
+		ip = m.getValue(mndp.TagIPv6Addr)
+	}
+	return ip
+}
+
 type MikrotikDataItem struct {
 	id string
 

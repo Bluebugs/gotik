@@ -96,9 +96,9 @@ func (a *appData) createUI(lastHost string) {
 	a.win.SetContent(NewSplit("Gotik", container.NewBorder(container.NewVBox(container.NewBorder(nil, nil,
 		widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() { a.removeHost(sel) }),
 		container.NewHBox(
-			widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() { a.newHost(sel) }),
+			widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() { a.newHost(sel, "") }),
 			widget.NewButtonWithIcon("", theme.MediaReplayIcon(), func() { a.reconnectHost(updateStatus, sel) }),
-			widget.NewButtonWithIcon("", theme.SearchIcon(), func() { a.displayNeighbor() }),
+			widget.NewButtonWithIcon("", theme.SearchIcon(), func() { a.displayNeighbor(sel) }),
 		),
 		sel), useTailScale),
 		nil, nil, nil, tree),
@@ -149,7 +149,9 @@ func (a *appData) tailScaleDisconnect() {
 	a.cancel = func() {}
 }
 
-func (a *appData) displayNeighbor() {
+func (a *appData) displayNeighbor(sel *widget.Select) {
+	var d *dialog.CustomDialog
+
 	neighbors := widget.NewListWithData(a.neighbors,
 		func() fyne.CanvasObject {
 			return widget.NewLabel("Mikrotik router somewhere (cc:2d:e0:e1:09:2a, 255.255.255.255) Mikrotik - 6.49.2 (stable)")
@@ -157,14 +159,29 @@ func (a *appData) displayNeighbor() {
 		func(i binding.DataItem, o fyne.CanvasObject) {
 			o.(*widget.Label).Bind(i.(binding.String))
 		})
+	neighbors.OnSelected = func(id int) {
+		b, err := a.neighbors.GetItem(id)
+		if err != nil {
+			return
+		}
+		neighbor := b.(*MikrotikRouter)
+		ip := neighbor.IP()
+		if ip == "" {
+			return
+		}
+		d.Hide()
+		a.newHost(sel, ip)
+	}
 	content := container.New(&moreSpace{a.win}, neighbors)
 
-	dialog.ShowCustom("Neighbors", "Close", content, a.win)
+	d = dialog.NewCustom("Neighbors", "Close", content, a.win)
+	d.Show()
 }
 
-func (a *appData) newHost(sel *widget.Select) {
+func (a *appData) newHost(sel *widget.Select, ip string) {
 	host := widget.NewEntry()
 	host.PlaceHolder = "127.0.0.1"
+	host.Text = ip
 	user := widget.NewEntry()
 	pass := widget.NewPasswordEntry()
 	ssl := widget.NewCheck("", nil)
