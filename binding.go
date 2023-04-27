@@ -26,8 +26,8 @@ var _ binding.String = (*MikrotikRouter)(nil)
 type MikrotikRouterList struct {
 	ch chan *mndp.Message
 
-	routers map[net.Addr]*MikrotikRouter
-	sorted  []net.Addr
+	routers map[string]*MikrotikRouter
+	sorted  []string
 
 	listeners sync.Map
 }
@@ -35,7 +35,7 @@ type MikrotikRouterList struct {
 var _ binding.DataList = (*MikrotikRouterList)(nil)
 
 func NewMikrotikRouterList() *MikrotikRouterList {
-	r := &MikrotikRouterList{ch: make(chan *mndp.Message), routers: map[net.Addr]*MikrotikRouter{}}
+	r := &MikrotikRouterList{ch: make(chan *mndp.Message), routers: map[string]*MikrotikRouter{}}
 	listener := mndp.NewListener()
 	listener.Listen(r.ch)
 
@@ -53,11 +53,11 @@ func NewMikrotikRouterList() *MikrotikRouterList {
 			if !okv4 && !okv6 {
 				continue
 			}
-			router, ok := r.routers[msg.Src]
+			router, ok := r.routers[msg.Src.String()]
 			if !ok {
 				router = &MikrotikRouter{*msg, r}
-				r.routers[msg.Src] = router
-				r.sorted = append(r.sorted, msg.Src)
+				r.routers[msg.Src.String()] = router
+				r.sorted = append(r.sorted, msg.Src.String())
 			} else {
 				router.Message = *msg
 			}
