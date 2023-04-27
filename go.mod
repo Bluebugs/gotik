@@ -4,8 +4,11 @@ go 1.20
 
 require (
 	fyne.io/fyne/v2 v2.3.3
+	github.com/fynelabs/fyneselfupdate v0.1.0
 	github.com/fynelabs/fynetailscale v0.1.1
+	github.com/fynelabs/selfupdate v0.2.0
 	github.com/go-routeros/routeros v0.0.0-20210123142807-2a44d57c6730
+	github.com/pjediny/mndp v0.0.0-20200223181158-09514a023d61
 	go.etcd.io/bbolt v1.3.7
 	golang.org/x/crypto v0.7.0
 	tailscale.com v1.38.4
@@ -37,8 +40,6 @@ require (
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504 // indirect
 	github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2 // indirect
-	github.com/fynelabs/fyneselfupdate v0.1.0 // indirect
-	github.com/fynelabs/selfupdate v0.2.0 // indirect
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -63,7 +64,6 @@ require (
 	github.com/mdlayher/sdnotify v1.0.0 // indirect
 	github.com/mdlayher/socket v0.4.0 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
-	github.com/pjediny/mndp v0.0.0-20200223181158-09514a023d61 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e // indirect
@@ -104,4 +104,4 @@ require (
 	nhooyr.io/websocket v1.8.7 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.3.3 => fyne.io/fyne/v2 v2.3.3-rc1.0.20230421113646-c0b6014b4eb6
+replace fyne.io/fyne/v2 v2.3.3 => fyne.io/fyne/v2 v2.3.3-rc1.0.20230426084847-b79c5c79ddba
