@@ -65,6 +65,7 @@ func main() {
 
 	myApp.createUI(lastHost)
 	defer myApp.Close()
+	selfManage(a, myApp.win)
 	myApp.win.ShowAndRun()
 }
 
