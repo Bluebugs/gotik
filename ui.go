@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/fynelabs/fynetailscale"
@@ -104,6 +105,9 @@ func (a *appData) createUI(lastHost string) {
 		nil, nil, nil, tree),
 		container.NewBorder(header, footer, nil, nil, tabs)))
 	a.win.Resize(fyne.NewSize(800, 600))
+	a.win.SetCloseIntercept(func() {
+		a.win.Hide()
+	})
 
 	if a.salt() != nil {
 		a.getPassword(lastHost, sel)
@@ -178,6 +182,29 @@ func (a *appData) displayNeighbor(sel *widget.Select) {
 	d.Show()
 }
 
+func (a *appData) updateSystray(sel *widget.Select) {
+	if _, ok := a.app.(desktop.App); ok {
+		items := []*fyne.MenuItem{}
+
+		for idx := range sel.Options {
+			host := sel.Options[idx]
+
+			items = append(items, fyne.NewMenuItem(host, func() {
+				sel.SetSelected(host)
+				a.win.Show()
+			}))
+		}
+
+		if len(items) == 0 {
+			items = append(items, fyne.NewMenuItem("Show", func() {
+				a.win.Show()
+			}))
+		}
+		a.m.Items = items
+		a.m.Refresh()
+	}
+}
+
 func (a *appData) newHost(sel *widget.Select, ip string) {
 	host := widget.NewEntry()
 	host.PlaceHolder = "127.0.0.1"
@@ -202,6 +229,8 @@ func (a *appData) newHost(sel *widget.Select, ip string) {
 				sel.Options = append(sel.Options, r.host)
 				sel.SetSelected(r.host)
 				sel.Refresh()
+
+				a.updateSystray(sel)
 
 				if a.key == nil {
 					a.createPassword(func() {
@@ -393,6 +422,7 @@ func (a *appData) removeHost(sel *widget.Select) {
 		}
 	}
 	sel.Refresh()
+	a.updateSystray(sel)
 }
 
 func (a *appData) reconnectHost(updateStatus func(identity binding.String, ssl bool, err error), sel *widget.Select) {

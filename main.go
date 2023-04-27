@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/driver/desktop"
 	"go.etcd.io/bbolt"
 	"tailscale.com/tsnet"
 )
@@ -29,6 +30,7 @@ type appData struct {
 
 	app fyne.App
 	win fyne.Window
+	m   *fyne.Menu
 
 	bindings []*MikrotikDataTable
 	current  *router
@@ -65,6 +67,14 @@ func main() {
 
 	myApp.createUI(lastHost)
 	defer myApp.Close()
+
+	if desk, ok := a.(desktop.App); ok {
+		myApp.m = fyne.NewMenu("Gotik", fyne.NewMenuItem("Show", func() {
+			myApp.win.Show()
+		}))
+		desk.SetSystemTrayMenu(myApp.m)
+	}
+
 	selfManage(a, myApp.win)
 	myApp.win.ShowAndRun()
 }

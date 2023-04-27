@@ -2,3 +2,4 @@
   Name = "GoTik - Fyne Mikrotik browsing"
   ID = "github.com.bluebugs.gotik"
   Build = 1
+  Icon = "Icon.png"

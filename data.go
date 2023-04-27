@@ -214,6 +214,7 @@ func (a *appData) loadRouters(sel *widget.Select) error {
 			return err
 		}
 		sel.Refresh()
+		a.updateSystray(sel)
 		return nil
 	})
 	if err != nil {
