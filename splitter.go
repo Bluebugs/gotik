@@ -45,6 +45,8 @@ func NewSplit(title string, leftContent fyne.CanvasObject, rightContent fyne.Can
 		leftContent:  leftContent,
 		rightContent: rightContent,
 	}
+	l.title.TextStyle.Bold = true
+	l.title.TextStyle.Italic = true
 	l.BaseWidget.ExtendBaseWidget(l)
 	return l
 }

@@ -94,7 +94,7 @@ func (a *appData) createUI(lastHost string) {
 	useTailScale.Checked = a.useTailScale
 	updateTailScale(a.useTailScale)
 
-	a.win.SetContent(NewSplit("Gotik", container.NewBorder(container.NewVBox(container.NewBorder(nil, nil,
+	a.win.SetContent(NewSplit("Gotik - "+a.app.Metadata().Version, container.NewBorder(container.NewVBox(container.NewBorder(nil, nil,
 		widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() { a.removeHost(sel) }),
 		container.NewHBox(
 			widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() { a.newHost(sel, "") }),
