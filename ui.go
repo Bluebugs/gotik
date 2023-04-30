@@ -40,10 +40,7 @@ func (a *appData) createUI(lastHost string) {
 			a.current.ssh, _ = a.current.NewSSH(a.win, a.dial)
 		}
 
-		fmt.Println("SSH", err)
-
 		var obj []fyne.CanvasObject
-
 		if err != nil {
 			obj = append(obj, widget.NewLabel(fmt.Sprintf("Last error: %v", err)))
 		}
@@ -161,10 +158,8 @@ func (a *appData) tailScaleLogin() error {
 	fynetailscale.NewLogin(ctx, a.win, lc, func(succeeded bool) {
 		if succeeded {
 			a.dial = a.ts.Dial
-			fmt.Println("Connected")
 		} else {
 			a.dial = tcpDialer.DialContext
-			fmt.Println("Failed to connect")
 		}
 	})
 

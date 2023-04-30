@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"image/color"
 	"io"
 	"net"
@@ -89,7 +88,6 @@ func (r *router) NewSSH(win fyne.Window, dial func(ctx context.Context, network,
 		}
 	}()
 
-	fmt.Println("new ssh", rssh)
 	return rssh, nil
 }
 
@@ -105,7 +103,6 @@ func (r *remote) Resize(s fyne.Size) {
 	cellSize := guessCellSize()
 	r.err = r.session.WindowChange(int(s.Height/cellSize.Height), int(s.Width/cellSize.Width))
 	r.terminal.Resize(s)
-	fmt.Println("resize", s)
 }
 
 func (r *remote) Close() error {
