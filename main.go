@@ -16,6 +16,8 @@ import (
 type router struct {
 	leaseBinding *MikrotikDataTable
 
+	ssh *remote
+
 	err error
 
 	host     string

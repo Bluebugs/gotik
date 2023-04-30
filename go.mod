@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	fyne.io/fyne/v2 v2.3.3
+	github.com/fyne-io/terminal v0.0.0-20230223114940-c76e408adbd3
 	github.com/fynelabs/fyneselfupdate v0.1.0
 	github.com/fynelabs/fynetailscale v0.1.1
 	github.com/fynelabs/selfupdate v0.2.0
@@ -17,6 +18,8 @@ require (
 require (
 	filippo.io/edwards25519 v1.0.0-rc.1 // indirect
 	fyne.io/systray v1.10.1-0.20230403195833-7dc3c09283d6 // indirect
+	github.com/ActiveState/termtest/conpty v0.5.0 // indirect
+	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/akutz/memconn v0.1.0 // indirect
 	github.com/alexbrainman/sspi v0.0.0-20210105120005-909beea2cc74 // indirect
@@ -33,6 +36,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.11.1 // indirect
 	github.com/aws/smithy-go v1.13.5 // indirect
 	github.com/coreos/go-iptables v0.6.0 // indirect
+	github.com/creack/pty v1.1.17 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fredbi/uri v0.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect

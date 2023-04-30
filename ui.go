@@ -24,8 +24,36 @@ func (a *appData) createUI(lastHost string) {
 		a.saveCurrentView()
 	}
 
-	header := widget.NewLabel("Not Connected")
-	header.Alignment = fyne.TextAlignCenter
+	headerBoard := widget.NewLabel("Not Connected")
+	headerBoard.Alignment = fyne.TextAlignCenter
+	headerSSH := widget.NewButtonWithIcon("SSH", theme.ComputerIcon(), func() {
+		if a.current == nil {
+			return
+		}
+
+		var err error
+		if a.current.ssh == nil {
+			a.current.ssh, err = a.current.NewSSH(a.win, a.dial)
+		} else if a.current.err != nil {
+			err = a.current.err
+			a.current.err = nil
+			a.current.ssh, _ = a.current.NewSSH(a.win, a.dial)
+		}
+
+		fmt.Println("SSH", err)
+
+		var obj []fyne.CanvasObject
+
+		if err != nil {
+			obj = append(obj, widget.NewLabel(fmt.Sprintf("Last error: %v", err)))
+		}
+		obj = append(obj, a.current.ssh)
+
+		content := container.New(&moreSpace{a.win}, container.NewStack(obj...))
+		d := dialog.NewCustom("SSH", "Close", content, a.win)
+		d.Show()
+	})
+	header := container.NewBorder(nil, nil, nil, headerSSH, headerBoard)
 	footer := widget.NewLabel("")
 	footer.Alignment = fyne.TextAlignCenter
 
@@ -36,21 +64,21 @@ func (a *appData) createUI(lastHost string) {
 
 			footer.SetText(fmt.Sprintf("%v", err))
 			if a.identity != nil {
-				header.Bind(a.identity)
+				headerBoard.Bind(a.identity)
 			} else {
-				header.Unbind()
-				header.SetText("Not Connected")
+				headerBoard.Unbind()
+				headerBoard.SetText("Not Connected")
 			}
 			return
 		}
 
 		if ssl {
-			header.TextStyle = fyne.TextStyle{Bold: true}
+			headerBoard.TextStyle = fyne.TextStyle{Bold: true}
 		} else {
-			header.TextStyle = fyne.TextStyle{}
+			headerBoard.TextStyle = fyne.TextStyle{}
 		}
 
-		header.Bind(identity)
+		headerBoard.Bind(identity)
 		footer.SetText("")
 	}
 
