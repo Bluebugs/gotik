@@ -52,6 +52,9 @@ func (a *appData) createUI(lastHost string) {
 		d := dialog.NewCustom("SSH", "Close", content, a.win)
 		d.Show()
 	})
+	if _, ok := a.app.(desktop.App); !ok {
+		headerSSH.Disable()
+	}
 	header := container.NewBorder(nil, nil, nil, headerSSH, headerBoard)
 	footer := widget.NewLabel("")
 	footer.Alignment = fyne.TextAlignCenter
