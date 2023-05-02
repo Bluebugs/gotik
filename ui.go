@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"image/color"
 	"log"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
@@ -44,7 +46,7 @@ func (a *appData) createUI(lastHost string) {
 		if err != nil {
 			obj = append(obj, widget.NewLabel(fmt.Sprintf("Last error: %v", err)))
 		}
-		obj = append(obj, a.current.ssh)
+		obj = append(obj, container.NewStack(canvas.NewRectangle(color.Black), a.current.ssh))
 
 		content := container.New(&moreSpace{a.win}, container.NewStack(obj...))
 		d := dialog.NewCustom("SSH", "Close", content, a.win)
