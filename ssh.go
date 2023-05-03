@@ -115,32 +115,7 @@ func (r *remote) Close() error {
 }
 
 func (r *remote) CreateRenderer() fyne.WidgetRenderer {
-	return &remoteRenderer{r: r}
-}
-
-type remoteRenderer struct {
-	r *remote
-}
-
-var _ fyne.WidgetRenderer = (*remoteRenderer)(nil)
-
-func (r *remoteRenderer) Destroy() {
-}
-
-func (r *remoteRenderer) Layout(s fyne.Size) {
-	r.r.terminal.Resize(s)
-}
-
-func (r *remoteRenderer) MinSize() fyne.Size {
-	return r.r.terminal.MinSize()
-}
-
-func (r *remoteRenderer) Objects() []fyne.CanvasObject {
-	return []fyne.CanvasObject{r.r.terminal}
-}
-
-func (r *remoteRenderer) Refresh() {
-	r.r.terminal.Refresh()
+	return widget.NewSimpleRenderer(r.terminal)
 }
 
 func guessCellSize() fyne.Size {
