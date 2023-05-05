@@ -240,6 +240,7 @@ func (a *appData) newHost(sel *widget.Select, ip string) {
 	user := widget.NewEntry()
 	pass := widget.NewPasswordEntry()
 	ssl := widget.NewCheck("", nil)
+	ssl.Checked = true
 	dialog.ShowForm("New router", "Connect", "Cancel",
 		[]*widget.FormItem{
 			{Text: "Host", Widget: host},
