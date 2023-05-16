@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -90,37 +90,53 @@ func (a *appData) NewTableWithDataColumn(column []RouterOSHeader, data *Mikrotik
 
 func (a *appData) lookupIP(button *Button) func() {
 	return func() {
-		msg := ""
+		dl := []binding.DataList{}
 
-		for _, router := range a.routers {
+		for name, router := range a.routers {
 			if router.leaseBinding == nil {
 				continue
 			}
-			lookups, err := router.leaseBinding.Search("mac-address", button.Text)
-			if err != nil {
+			lookup := router.leaseBinding.Search("mac-address", button.Text)
+			if lookup == nil {
+				log.Println("no lease in", name)
 				continue
 			}
 
-			for _, lookup := range lookups {
-				ipString, _ := lookup.GetValue("active-address")
-				hostnameString, _ := lookup.GetValue("host-name")
+			dl = append(dl, lookup)
+		}
 
-				if len(hostnameString) > 0 {
-					if len(ipString) > 0 {
-						msg += fmt.Sprintf("%s (%s)\n", hostnameString, ipString)
-					} else {
-						msg += fmt.Sprintf("%s (-)\n", hostnameString)
-					}
-				} else if len(ipString) > 0 {
-					msg += fmt.Sprintf("%s\n", ipString)
+		merged := NewMergeDataList(dl)
+
+		list := widget.NewListWithData(merged, func() fyne.CanvasObject {
+			return widget.NewLabel("hostname.somewhere.com (255.255.255.255)")
+		}, func(di binding.DataItem, co fyne.CanvasObject) {
+			lookup := di.(*MikrotikDataItem)
+			label := co.(*widget.Label)
+
+			ipString, _ := lookup.Get("active-address")
+			hostnameString, _ := lookup.Get("host-name")
+
+			if len(getString(hostnameString)) > 0 {
+				if len(getString(ipString)) > 0 {
+					label.Bind(binding.NewSprintf("%s (%s)\n", hostnameString, ipString))
+				} else {
+					label.Bind(binding.NewSprintf("%s (-)\n", hostnameString))
 				}
+			} else if len(getString(ipString)) > 0 {
+				label.Bind(binding.NewSprintf("%s\n", ipString))
+			} else {
+				label.Unbind()
+				label.SetText("unknown")
 			}
-		}
-		if len(msg) == 0 {
-			return
-		}
 
-		dialog.ShowInformation("Matching information for "+button.Text, msg, a.win)
+		})
+
+		d := dialog.NewCustom("Matching information for "+button.Text, "OK", container.New(&moreSpace{a.win}, list), a.win)
+		d.SetOnClosed(func() {
+			merged.Close()
+			d.Hide()
+		})
+		d.Show()
 	}
 }
 

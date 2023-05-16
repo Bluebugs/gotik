@@ -172,6 +172,7 @@ type MikrotikDataTable struct {
 
 	cancel context.CancelFunc
 
+	lock      sync.RWMutex
 	items     map[string]*MikrotikDataItem
 	itemsList []*MikrotikDataItem
 }
@@ -232,10 +233,13 @@ func NewMikrotikData(dial func(ctx context.Context, network, address string) (ne
 				return
 			}
 
+			m.lock.Lock()
 			for {
+				m.lock.Unlock()
 				select {
 				case s := <-l.Chan():
 					id := getID(s)
+					m.lock.Lock()
 					item, ok := m.items[id]
 					if !ok {
 						if id != "" {
@@ -277,30 +281,24 @@ func NewMikrotikData(dial func(ctx context.Context, network, address string) (ne
 	return m, nil
 }
 
+func (m *MikrotikDataTable) Range(f func(item *MikrotikDataItem) bool) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+
+	for _, item := range m.items {
+		if ok := f(item); !ok {
+			return
+		}
+	}
+}
+
 func (m *MikrotikDataTable) Close() {
 	m.listeners = sync.Map{}
 	m.cancel()
 }
 
-func (m *MikrotikDataTable) Search(property, value string) ([]*MikrotikDataItem, error) {
-	var items []*MikrotikDataItem
-
-	for _, item := range m.items {
-		if v, ok := item.properties[property]; ok {
-			s, err := v.Get()
-			if err != nil {
-				continue
-			}
-
-			if s == value {
-				items = append(items, item)
-			}
-		}
-	}
-	if len(items) == 0 {
-		return nil, errors.New("not found")
-	}
-	return items, nil
+func (m *MikrotikDataTable) Search(property, value string) *MikrotikSearch {
+	return &MikrotikSearch{property: property, value: value, m: m}
 }
 
 func (m *MikrotikDataTable) Exist(property, value string) binding.Bool {
@@ -417,4 +415,142 @@ func (b *MikrotikExist) AddListener(l binding.DataListener) {
 
 func (b *MikrotikExist) RemoveListener(l binding.DataListener) {
 	b.m.RemoveListener(l)
+}
+
+type MikrotikSearch struct {
+	property, value string
+
+	m *MikrotikDataTable
+}
+
+var _ binding.DataList = (*MikrotikSearch)(nil)
+
+func (b *MikrotikSearch) Length() int {
+	count := 0
+
+	b.m.Range(func(item *MikrotikDataItem) bool {
+		if v, ok := item.properties[b.property]; ok {
+			s, err := v.Get()
+			if err != nil {
+				return true
+			}
+
+			if s == b.value {
+				count++
+			}
+		}
+		return true
+	})
+	return count
+}
+
+func (b *MikrotikSearch) GetItem(index int) (r binding.DataItem, err error) {
+	count := 0
+
+	b.m.Range(func(item *MikrotikDataItem) bool {
+		if v, ok := item.properties[b.property]; ok {
+			s, err := v.Get()
+			if err != nil {
+				return true
+			}
+
+			if s == b.value {
+				if count == index {
+					r = item
+					return false
+				}
+				count++
+			}
+		}
+		return true
+	})
+
+	if r != nil {
+		return
+	}
+	return nil, errors.New("not found")
+}
+
+func (b *MikrotikSearch) AddListener(l binding.DataListener) {
+	b.m.AddListener(l)
+}
+
+func (b *MikrotikSearch) RemoveListener(l binding.DataListener) {
+	b.m.RemoveListener(l)
+}
+
+type MergeDataList struct {
+	dl     []binding.DataList
+	length []int
+
+	listener []binding.DataListener
+}
+
+var _ binding.DataList = (*MergeDataList)(nil)
+
+func NewMergeDataList(dl []binding.DataList) *MergeDataList {
+	r := &MergeDataList{dl: dl, length: make([]int, len(dl))}
+
+	var wg sync.WaitGroup
+
+	for idx, dl := range dl {
+		copy := dl
+		cidx := idx
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			r.length[cidx] = copy.Length()
+		}()
+
+		r.listener = append(r.listener, binding.NewDataListener(func() {
+			r.length[cidx] = copy.Length()
+		}))
+	}
+
+	wg.Wait()
+
+	for idx := range r.listener {
+		r.dl[idx].AddListener(r.listener[idx])
+	}
+
+	return r
+}
+
+func (m *MergeDataList) Close() {
+	for idx := range m.listener {
+		m.dl[idx].RemoveListener(m.listener[idx])
+	}
+}
+
+func (m *MergeDataList) Length() int {
+	total := 0
+	for _, length := range m.length {
+		total += length
+	}
+
+	return total
+}
+
+func (m *MergeDataList) GetItem(index int) (r binding.DataItem, err error) {
+	base := 0
+
+	for idx, dl := range m.dl {
+		if base <= index && index < base+m.length[idx] {
+			return dl.GetItem(index - base)
+		}
+		base += m.length[idx]
+	}
+	return nil, errors.New("not found")
+}
+
+func (m *MergeDataList) AddListener(l binding.DataListener) {
+	for _, dl := range m.dl {
+		dl.AddListener(l)
+	}
+}
+
+func (m *MergeDataList) RemoveListener(l binding.DataListener) {
+	for _, dl := range m.dl {
+		dl.RemoveListener(l)
+	}
 }
