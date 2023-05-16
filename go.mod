@@ -39,7 +39,7 @@ require (
 	github.com/creack/pty v1.1.17 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fredbi/uri v0.1.0 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.4.0 // indirect
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504 // indirect
@@ -89,16 +89,16 @@ require (
 	go4.org/mem v0.0.0-20210711025021-927187094b94 // indirect
 	go4.org/netipx v0.0.0-20220725152314-7e7bdc8411bf // indirect
 	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db // indirect
-	golang.org/x/image v0.5.0 // indirect
-	golang.org/x/mobile v0.0.0-20211207041440-4e6c2922fdee // indirect
-	golang.org/x/mod v0.9.0 // indirect
+	golang.org/x/image v0.7.0 // indirect
+	golang.org/x/mobile v0.0.0-20230427221453-e8d11dd0ba41 // indirect
+	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/term v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
-	golang.org/x/tools v0.7.0 // indirect
+	golang.org/x/tools v0.8.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 	golang.zx2c4.com/wireguard/windows v0.5.3 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -108,4 +108,4 @@ require (
 	nhooyr.io/websocket v1.8.7 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.3.3 => fyne.io/fyne/v2 v2.3.3-rc1.0.20230426084847-b79c5c79ddba
+replace fyne.io/fyne/v2 v2.3.3 => fyne.io/fyne/v2 v2.3.4-rc1.0.20230509111421-01205ce3dc30
