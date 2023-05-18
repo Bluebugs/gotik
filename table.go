@@ -11,12 +11,12 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func (a *appData) NewTableWithDataColumn(column []RouterOSHeader, data *MikrotikDataTable) *widget.Table {
+func (a *appData) NewTableWithDataColumn(jumpToTab func(host, view string), column []RouterOSHeader, data *MikrotikDataTable) *widget.Table {
 	t := widget.NewTable(func() (int, int) {
 		return data.Length(), len(column)
 	}, func() fyne.CanvasObject {
 		var button *Button
-		button = NewButton("MAC Address", a.lookupIP(button))
+		button = NewButton("MAC Address", a.lookupIP(jumpToTab, button))
 		button.Hide()
 		button.Importance = widget.LowImportance
 
@@ -60,7 +60,7 @@ func (a *appData) NewTableWithDataColumn(column []RouterOSHeader, data *Mikrotik
 				exist = append(exist, router.leaseBinding.Exist("mac-address", button.Text))
 			}
 			button.Icon = nil
-			button.OnTapped = a.lookupIP(button)
+			button.OnTapped = a.lookupIP(jumpToTab, button)
 			button.BindDisable(NewNot(NewOr(exist...)))
 		} else if column[i.Col].copy {
 			button.Icon = theme.ContentCopyIcon()
@@ -88,7 +88,7 @@ func (a *appData) NewTableWithDataColumn(column []RouterOSHeader, data *Mikrotik
 	return t
 }
 
-func (a *appData) lookupIP(button *Button) func() {
+func (a *appData) lookupIP(jumpToTab func(host, view string), button *Button) func() {
 	return func() {
 		dl := []binding.DataList{}
 
@@ -107,34 +107,40 @@ func (a *appData) lookupIP(button *Button) func() {
 
 		merged := NewMergeDataList(dl)
 
+		var d *dialog.CustomDialog
+
 		list := widget.NewListWithData(merged, func() fyne.CanvasObject {
-			return widget.NewLabel("hostname.somewhere.com (255.255.255.255)")
+			return NewButton("hostname.somewhere.com (255.255.255.255)", func() {})
 		}, func(di binding.DataItem, co fyne.CanvasObject) {
 			lookup := di.(*MikrotikDataItem)
-			label := co.(*widget.Label)
+			btn := co.(*Button)
 
 			ipString, _ := lookup.Get("active-address")
 			hostnameString, _ := lookup.Get("host-name")
 
+			btn.OnTapped = func() {
+				d.Hide()
+				jumpToTab(lookup.Router(), "DHCP Server")
+			}
 			if len(getString(hostnameString)) > 0 {
 				if len(getString(ipString)) > 0 {
-					label.Bind(binding.NewSprintf("%s (%s)\n", hostnameString, ipString))
+					btn.Bind(binding.NewSprintf("%s (%s)", hostnameString, ipString))
 				} else {
-					label.Bind(binding.NewSprintf("%s (-)\n", hostnameString))
+					btn.Bind(binding.NewSprintf("%s (-)", hostnameString))
 				}
 			} else if len(getString(ipString)) > 0 {
-				label.Bind(binding.NewSprintf("%s\n", ipString))
+				btn.Bind(binding.NewSprintf("%s", ipString))
 			} else {
-				label.Unbind()
-				label.SetText("unknown")
+				btn.OnTapped = func() {}
+				btn.Unbind()
+				btn.SetText("unknown")
 			}
 
 		})
 
-		d := dialog.NewCustom("Matching information for "+button.Text, "OK", container.New(&moreSpace{a.win}, list), a.win)
+		d = dialog.NewCustom("Matching information for "+button.Text, "OK", container.New(&moreSpace{a.win}, list), a.win)
 		d.SetOnClosed(func() {
 			merged.Close()
-			d.Hide()
 		})
 		d.Show()
 	}

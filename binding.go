@@ -160,7 +160,8 @@ func (m *MikrotikRouter) IP() string {
 }
 
 type MikrotikDataItem struct {
-	id string
+	router string
+	id     string
 
 	properties map[string]binding.String
 
@@ -214,7 +215,7 @@ func NewMikrotikData(dial func(ctx context.Context, network, address string) (ne
 	listen := false
 
 	for _, s := range r.Re {
-		item := newMikrotikDataItem(s)
+		item := newMikrotikDataItem(s, host)
 		m.items[item.id] = item
 		m.itemsList = append(m.itemsList, item)
 		if item.id != "" {
@@ -243,7 +244,7 @@ func NewMikrotikData(dial func(ctx context.Context, network, address string) (ne
 					item, ok := m.items[id]
 					if !ok {
 						if id != "" {
-							item = newMikrotikDataItem(s)
+							item = newMikrotikDataItem(s, host)
 							m.items[id] = item
 							m.itemsList = append(m.itemsList, item)
 							m.listeners.Range(func(key, value interface{}) bool {
@@ -332,6 +333,10 @@ func (m *MikrotikDataTable) RemoveListener(l binding.DataListener) {
 	m.listeners.Delete(l)
 }
 
+func (m *MikrotikDataItem) Router() string {
+	return m.router
+}
+
 func (m *MikrotikDataItem) Get(key string) (binding.String, error) {
 	if b, ok := m.properties[key]; ok {
 		return b, nil
@@ -368,8 +373,8 @@ func getID(r *proto.Sentence) string {
 	return ""
 }
 
-func newMikrotikDataItem(r *proto.Sentence) *MikrotikDataItem {
-	item := &MikrotikDataItem{properties: map[string]binding.String{}}
+func newMikrotikDataItem(r *proto.Sentence, host string) *MikrotikDataItem {
+	item := &MikrotikDataItem{router: host, properties: map[string]binding.String{}}
 	for _, p := range r.List {
 		if p.Key == ".id" {
 			item.id = p.Value

@@ -84,9 +84,15 @@ func (a *appData) createUI(lastHost string) {
 		footer.SetText("")
 	}
 
+	var sel *widget.Select
+
 	tree := widget.NewTreeWithStrings(routerOStree)
+	jumpToTab := func(host, view string) {
+		sel.SetSelected(host)
+		tree.OnSelected(view)
+	}
 	tree.OnSelected = func(id string) {
-		err := a.buildView(tabs, id)
+		err := a.buildView(tabs, jumpToTab, id)
 		if err != nil {
 			updateStatus(nil, false, err)
 			return
@@ -96,7 +102,7 @@ func (a *appData) createUI(lastHost string) {
 		updateStatus(a.identity, a.current.ssl, nil)
 	}
 
-	sel := widget.NewSelect([]string{}, a.selectHost(tabs, updateStatus))
+	sel = widget.NewSelect([]string{}, a.selectHost(tabs, updateStatus, jumpToTab))
 
 	var useTailScale *widget.Check
 	updateTailScale := func(b bool) {
@@ -279,7 +285,7 @@ func (a *appData) newHost(sel *widget.Select, ip string) {
 	a.win.Canvas().Focus(host)
 }
 
-func (a *appData) selectHost(tabs *container.AppTabs, updateStatus func(identity binding.String, ssl bool, err error)) func(s string) {
+func (a *appData) selectHost(tabs *container.AppTabs, updateStatus func(identity binding.String, ssl bool, err error), jumpToTab func(host, view string)) func(s string) {
 	return func(s string) {
 		for _, b := range a.bindings {
 			b.Close()
@@ -308,7 +314,7 @@ func (a *appData) selectHost(tabs *container.AppTabs, updateStatus func(identity
 		a.identity = identity
 
 		if a.currentView != "" {
-			err := a.buildView(tabs, a.currentView)
+			err := a.buildView(tabs, jumpToTab, a.currentView)
 			if err != nil {
 				updateStatus(nil, false, err)
 				return
@@ -388,7 +394,7 @@ func (a *appData) getPassword(lastHost string, sel *widget.Select) {
 	a.win.Canvas().Focus(password)
 }
 
-func (a *appData) buildView(tabs *container.AppTabs, view string) error {
+func (a *appData) buildView(tabs *container.AppTabs, jumpToTab func(host, view string), view string) error {
 	a.currentView = view
 
 	if a.current == nil {
@@ -413,7 +419,7 @@ func (a *appData) buildView(tabs *container.AppTabs, view string) error {
 		if a.currentTab == cmd.title {
 			selectIndex = len(tabs.Items)
 		}
-		tabs.Items = append(tabs.Items, container.NewTabItem(cmd.title, a.NewTableWithDataColumn(cmd.headers, b)))
+		tabs.Items = append(tabs.Items, container.NewTabItem(cmd.title, a.NewTableWithDataColumn(jumpToTab, cmd.headers, b)))
 	}
 	tabs.SelectIndex(selectIndex)
 	tabs.Refresh()

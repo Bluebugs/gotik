@@ -90,6 +90,10 @@ refreshDisable:
 }
 
 func getString(data binding.String) string {
+	if data == nil {
+		return ""
+	}
+
 	v, err := data.Get()
 	if err != nil {
 		return ""
@@ -98,6 +102,10 @@ func getString(data binding.String) string {
 }
 
 func getBool(data binding.Bool) bool {
+	if data == nil {
+		return false
+	}
+
 	v, err := data.Get()
 	if err != nil {
 		return false
