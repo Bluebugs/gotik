@@ -61,7 +61,7 @@ func (a *appData) NewTableWithDataColumn(jumpToTab func(host, view string), colu
 			}
 			button.Icon = nil
 			button.OnTapped = a.lookupIP(jumpToTab, button)
-			button.BindDisable(NewNot(NewOr(exist...)))
+			button.BindDisable(binding.Not(binding.Or(exist...)))
 		} else if column[i.Col].copy {
 			button.Icon = theme.ContentCopyIcon()
 			button.OnTapped = a.copy(button)

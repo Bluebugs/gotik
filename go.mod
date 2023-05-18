@@ -108,4 +108,4 @@ require (
 	nhooyr.io/websocket v1.8.7 // indirect
 )
 
-replace fyne.io/fyne/v2 v2.3.3 => fyne.io/fyne/v2 v2.3.4-rc1.0.20230509111421-01205ce3dc30
+replace fyne.io/fyne/v2 v2.3.3 => fyne.io/fyne/v2 v2.3.4-rc1.0.20230516195251-56dd0f3e0f32
