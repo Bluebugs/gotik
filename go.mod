@@ -11,7 +11,7 @@ require (
 	github.com/go-routeros/routeros v0.0.0-20210123142807-2a44d57c6730
 	github.com/pjediny/mndp v0.0.0-20200223181158-09514a023d61
 	go.etcd.io/bbolt v1.3.7
-	golang.org/x/crypto v0.9.0
+	golang.org/x/crypto v0.10.0
 	tailscale.com v1.40.1
 )
 
@@ -94,9 +94,9 @@ require (
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/term v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/term v0.9.0 // indirect
+	golang.org/x/text v0.10.0 // indirect
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
 	golang.org/x/tools v0.8.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
